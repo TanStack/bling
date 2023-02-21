@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "repository": "https://github.com/tanstack/bling.git",
+  "scripts": {
+    "build": "pnpm -rc --parallel exec 'pnpm build'",
+    "dev": "pnpm -rc --parallel exec 'pnpm dev'",
+    "clean-all": "pnpm -rc --parallel exec 'rm -rf build dist node_modules'",
+    "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write",
+    "cipublish": "ts-node scripts/publish.ts",
+    "cipublishforce": "CI=true pnpm cipublish"
+  },
+  "pnpm": {
+    "overrides": {
+      "@tanstack/bling": "workspace:*"
+    }
+  }
+}

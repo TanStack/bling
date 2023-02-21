@@ -1,0 +1,54 @@
+{
+  "name": "@tanstack/bling",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Nikhil Saraf",
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:index --watch\" \"pnpm build:vite --watch\" \"pnpm build:babel --watch\" \"pnpm build:browser --watch\"",
+    "build": "pnpm build:types && pnpm build:index && pnpm build:vite && pnpm build:babel && pnpm build:browser",
+    "build:index": "esbuild src/index.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/index.js",
+    "build:vite": "esbuild src/vite.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/vite.js",
+    "build:babel": "esbuild src/babel.ts --bundle --platform=node --sourcemap --outfile=dist/babel.js",
+    "build:browser": "esbuild src/browser.ts --bundle --platform=browser --minify --sourcemap --outfile=dist/browser.js",
+    "build:types": "tsc --emitDeclarationOnly --declaration --skipLibCheck"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": {
+      "browser": "./dist/browser.js",
+      "import": "./dist/index.js",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./server/*": "./dist/*",
+    "./babel": {
+      "import": "./dist/babel.js",
+      "types": "./dist/babel.d.ts"
+    },
+    "./vite": {
+      "import": "./dist/vite.js",
+      "types": "./dist/vite.d.ts"
+    }
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^3.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "esbuild": "^0.16.3",
+    "esbuild-plugin-replace": "^1.3.0",
+    "typescript": "4.9.4",
+    "vitest": "^0.26.2"
+  }
+}

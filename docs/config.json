@@ -1,0 +1,30 @@
+{
+  "docSearch": {
+    "appId": "",
+    "apiKey": "",
+    "indexName": ""
+  },
+  "menu": [
+    {
+      "label": "Getting Started",
+      "children": [
+        {
+          "label": "Overview",
+          "to": "overview"
+        },
+        {
+          "label": "Installation",
+          "to": "installation"
+        }
+      ]
+    },
+    {
+      "label": "Guide",
+      "children": []
+    },
+    {
+      "label": "API",
+      "children": []
+    }
+  ]
+}
