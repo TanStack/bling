@@ -485,54 +485,54 @@ async function run() {
   //   )
   // }
 
-  console.info(`Updating all example dependencies...`)
-  await Promise.all(
-    examplesDirs.map(async (examplesDir) => {
-      examplesDir = path.resolve(rootDir, examplesDir)
-      const exampleDirs = await fsp.readdir(examplesDir)
-      for (const exampleName of exampleDirs) {
-        const exampleDir = path.resolve(examplesDir, exampleName)
-        const stat = await fsp.stat(exampleDir)
-        if (!stat.isDirectory()) continue
+  // console.info(`Updating all example dependencies...`)
+  // await Promise.all(
+  //   examplesDirs.map(async (examplesDir) => {
+  //     examplesDir = path.resolve(rootDir, examplesDir)
+  //     const exampleDirs = await fsp.readdir(examplesDir)
+  //     for (const exampleName of exampleDirs) {
+  //       const exampleDir = path.resolve(examplesDir, exampleName)
+  //       const stat = await fsp.stat(exampleDir)
+  //       if (!stat.isDirectory()) continue
 
-        await Promise.all([
-          fsp.rm(path.resolve(exampleDir, 'package-lock.json'), {
-            force: true,
-          }),
-          fsp.rm(path.resolve(exampleDir, 'yarn.lock'), {
-            force: true,
-          }),
-          updatePackageJson(
-            path.resolve(exampleDir, 'package.json'),
-            async (config) => {
-              await Promise.all(
-                changedPackages.map(async (pkg) => {
-                  const depVersion = await getPackageVersion(
-                    path.resolve(
-                      rootDir,
-                      'packages',
-                      pkg.packageDir,
-                      'package.json'
-                    )
-                  )
+  //       await Promise.all([
+  //         fsp.rm(path.resolve(exampleDir, 'package-lock.json'), {
+  //           force: true,
+  //         }),
+  //         fsp.rm(path.resolve(exampleDir, 'yarn.lock'), {
+  //           force: true,
+  //         }),
+  //         updatePackageJson(
+  //           path.resolve(exampleDir, 'package.json'),
+  //           async (config) => {
+  //             await Promise.all(
+  //               changedPackages.map(async (pkg) => {
+  //                 const depVersion = await getPackageVersion(
+  //                   path.resolve(
+  //                     rootDir,
+  //                     'packages',
+  //                     pkg.packageDir,
+  //                     'package.json'
+  //                   )
+  //                 )
 
-                  if (
-                    config.dependencies?.[pkg.name] &&
-                    config.dependencies[pkg.name] !== depVersion
-                  ) {
-                    console.info(
-                      `  Updating ${exampleName}'s dependency on ${pkg.name} to version ${depVersion}.`
-                    )
-                    config.dependencies[pkg.name] = depVersion
-                  }
-                })
-              )
-            }
-          ),
-        ])
-      }
-    })
-  )
+  //                 if (
+  //                   config.dependencies?.[pkg.name] &&
+  //                   config.dependencies[pkg.name] !== depVersion
+  //                 ) {
+  //                   console.info(
+  //                     `  Updating ${exampleName}'s dependency on ${pkg.name} to version ${depVersion}.`
+  //                   )
+  //                   config.dependencies[pkg.name] = depVersion
+  //                 }
+  //               })
+  //             )
+  //           }
+  //         ),
+  //       ])
+  //     }
+  //   })
+  // )
 
   if (!process.env.CI) {
     console.warn(
