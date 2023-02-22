@@ -1,17 +1,17 @@
 {
   "name": "@tanstack/bling",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "author": "Nikhil Saraf",
   "license": "MIT",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.ts",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist"
+    "*"
   ],
   "scripts": {
     "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:index --watch\" \"pnpm build:vite --watch\" \"pnpm build:babel --watch\" \"pnpm build:browser --watch\"",
@@ -31,7 +31,6 @@
       "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./server/*": "./dist/*",
     "./babel": {
       "import": "./dist/babel.js",
       "types": "./dist/babel.d.ts"
