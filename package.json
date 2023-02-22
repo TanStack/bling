@@ -2,8 +2,9 @@
   "private": true,
   "repository": "https://github.com/tanstack/bling.git",
   "scripts": {
-    "build": "pnpm -rc --parallel exec 'pnpm build'",
+    "build": "ts-node scripts/build.ts",
     "dev": "pnpm -rc --parallel exec 'pnpm dev'",
+    "test": "exit 0",
     "clean-all": "pnpm -rc --parallel exec 'rm -rf build dist node_modules'",
     "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write",
     "pub": "pnpm build && pnpm publish -r --no-git-checks",

@@ -22,6 +22,7 @@ import axios from 'axios'
 import { DateTime } from 'luxon'
 
 import { PackageJson } from 'type-fest'
+import { builder } from './builder'
 
 const releaseCommitMsg = (version: string) => `release: v${version}`
 
@@ -76,13 +77,13 @@ async function run() {
     if (process.env.TAG) {
       if (!process.env.TAG.startsWith('v')) {
         throw new Error(
-          `process.env.TAG must start with "v", eg. v0.0.0. You supplied ${process.env.TAG}`,
+          `process.env.TAG must start with "v", eg. v0.0.0. You supplied ${process.env.TAG}`
         )
       }
       console.info(
         chalk.yellow(
-          `Tag is set to ${process.env.TAG}. This will force release all packages. Publishing...`,
-        ),
+          `Tag is set to ${process.env.TAG}. This will force release all packages. Publishing...`
+        )
       )
       RELEASE_ALL = true
 
@@ -93,7 +94,7 @@ async function run() {
       }
     } else {
       throw new Error(
-        'Could not find latest tag! To make a release tag of v0.0.1, run with TAG=v0.0.1',
+        'Could not find latest tag! To make a release tag of v0.0.1, run with TAG=v0.0.1'
       )
     }
   }
@@ -115,7 +116,7 @@ async function run() {
             const parsed = await parseCommit(d.subject)
 
             return { ...d, parsed }
-          }),
+          })
         ).then((res) => resolve(res.filter(Boolean)))
       })
     })
@@ -129,7 +130,7 @@ async function run() {
   })
 
   console.info(
-    `Parsing ${commitsSinceLatestTag.length} commits since ${latestTag}...`,
+    `Parsing ${commitsSinceLatestTag.length} commits since ${latestTag}...`
   )
 
   // Pares the commit messsages, log them, and determine the type of release needed
@@ -153,7 +154,7 @@ async function run() {
 
       return releaseLevel
     },
-    -1,
+    -1
   )
 
   const changedFiles: string[] = process.env.TAG
@@ -167,7 +168,7 @@ async function run() {
     ? packages
     : changedFiles.reduce((changedPackages, file) => {
         const pkg = packages.find((p) =>
-          file.startsWith(path.join('packages', p.packageDir, p.srcDir)),
+          file.startsWith(path.join('packages', p.packageDir, p.srcDir))
         )
         if (pkg && !changedPackages.find((d) => d.name === pkg.name)) {
           changedPackages.push(pkg)
@@ -180,30 +181,30 @@ async function run() {
   await Promise.all(
     packages.map(async (pkg) => {
       const pkgJson = await readPackageJson(
-        path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json'),
+        path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json')
       )
       if (
         Object.keys(pkgJson.dependencies ?? {})?.find((dep) =>
-          changedPackages.find((d) => d.name === dep),
+          changedPackages.find((d) => d.name === dep)
         ) &&
         !changedPackages.find((d) => d.name === pkg.name)
       ) {
         changedPackages.push(pkg)
       }
-    }),
+    })
   )
 
   if (!process.env.TAG) {
     if (recommendedReleaseLevel === 2) {
       console.info(
-        `Major versions releases must be tagged and released manually.`,
+        `Major versions releases must be tagged and released manually.`
       )
       return
     }
 
     if (recommendedReleaseLevel === -1) {
       console.info(
-        `There have been no changes since the release of ${latestTag} that require a new version. You're good!`,
+        `There have been no changes since the release of ${latestTag} that require a new version. You're good!`
       )
       return
     }
@@ -242,7 +243,7 @@ async function run() {
               ...acc,
               [type]: [...(acc[type] || []), next],
             }
-          }, {} as Record<string, Commit[]>),
+          }, {} as Record<string, Commit[]>)
         )
           .sort(
             getSorterFn([
@@ -257,7 +258,7 @@ async function run() {
                   'fix',
                   'feat',
                 ].indexOf(d),
-            ]),
+            ])
           )
           .reverse()
           .map(async ([type, commits]) => {
@@ -279,7 +280,7 @@ async function run() {
                       headers: {
                         Authorization: `token ${process.env.GH_TOKEN}`,
                       },
-                    },
+                    }
                   )
 
                   username = res.data.items[0]?.login
@@ -296,9 +297,9 @@ async function run() {
                     ? `by @${username}`
                     : `by ${commit.author.name ?? commit.author.email}`
                 }`
-              }),
+              })
             ).then((commits) => [type, commits] as const)
-          }),
+          })
       ).then((groups) => {
         return groups
           .map(([type, commits]) => {
@@ -329,13 +330,13 @@ async function run() {
         latestTag,
         recommendedReleaseLevel,
         branchConfig.prerelease,
-      ].join(', ')}`,
+      ].join(', ')}`
     )
   }
 
   const changelogMd = [
     `Version ${version} - ${DateTime.now().toLocaleString(
-      DateTime.DATETIME_SHORT,
+      DateTime.DATETIME_SHORT
     )}`,
     `## Changes`,
     changelogCommitsMd,
@@ -349,7 +350,7 @@ async function run() {
   console.info()
 
   console.info('Building packages...')
-  execSync(`pnpm build`, { encoding: 'utf8', stdio: 'inherit' })
+  await builder()
   console.info('')
 
   // console.info('Building types...')
@@ -362,7 +363,7 @@ async function run() {
   await Promise.all(
     packages.map(async (pkg) => {
       const pkgJson = await readPackageJson(
-        path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json'),
+        path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json')
       )
 
       await Promise.all(
@@ -372,7 +373,7 @@ async function run() {
 
             if (!entry) {
               throw new Error(
-                `Missing entry for "${entryKey}" in ${pkg.packageDir}/package.json!`,
+                `Missing entry for "${entryKey}" in ${pkg.packageDir}/package.json!`
               )
             }
 
@@ -380,7 +381,7 @@ async function run() {
               rootDir,
               'packages',
               pkg.packageDir,
-              entry,
+              entry
             )
 
             try {
@@ -388,15 +389,15 @@ async function run() {
             } catch (err) {
               failedValidations.push(`Missing build file: ${filePath}`)
             }
-          },
-        ),
+          }
+        )
       )
-    }),
+    })
   )
   console.info('')
   if (failedValidations.length > 0) {
     throw new Error(
-      'Some packages failed validation:\n\n' + failedValidations.join('\n'),
+      'Some packages failed validation:\n\n' + failedValidations.join('\n')
     )
   }
 
@@ -413,7 +414,7 @@ async function run() {
       path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json'),
       (config) => {
         config.version = version
-      },
+      }
     )
   }
 
@@ -511,8 +512,8 @@ async function run() {
                       rootDir,
                       'packages',
                       pkg.packageDir,
-                      'package.json',
-                    ),
+                      'package.json'
+                    )
                   )
 
                   if (
@@ -520,22 +521,22 @@ async function run() {
                     config.dependencies[pkg.name] !== depVersion
                   ) {
                     console.info(
-                      `  Updating ${exampleName}'s dependency on ${pkg.name} to version ${depVersion}.`,
+                      `  Updating ${exampleName}'s dependency on ${pkg.name} to version ${depVersion}.`
                     )
                     config.dependencies[pkg.name] = depVersion
                   }
-                }),
+                })
               )
-            },
+            }
           ),
         ])
       }
-    }),
+    })
   )
 
   if (!process.env.CI) {
     console.warn(
-      `This is a dry run for version ${version}. Push to CI to publish for real or set CI=true to override!`,
+      `This is a dry run for version ${version}. Push to CI to publish for real or set CI=true to override!`
     )
     return
   }
@@ -547,7 +548,7 @@ async function run() {
   const taggedVersion = getTaggedVersion()
   if (!taggedVersion) {
     throw new Error(
-      'Missing the tagged release version. Something weird is afoot!',
+      'Missing the tagged release version. Something weird is afoot!'
     )
   }
 
@@ -559,7 +560,7 @@ async function run() {
     const packageDir = path.join(rootDir, 'packages', pkg.packageDir)
     const cmd = `cd ${packageDir} && pnpm publish --tag ${npmTag} --access=public --no-git-checks`
     console.info(
-      `  Publishing ${pkg.name}@${version} to npm with tag "${npmTag}"...`,
+      `  Publishing ${pkg.name}@${version} to npm with tag "${npmTag}"...`
     )
     // execSync(`${cmd} --token ${process.env.NPM_TOKEN}`)
     execSync(cmd)
@@ -577,7 +578,7 @@ async function run() {
     execSync(
       `gh release create v${version} ${
         !isLatestBranch ? '--prerelease' : ''
-      } --notes '${changelogMd}'`,
+      } --notes '${changelogMd}'`
     )
     console.info(`  Github release created.`)
 
@@ -621,7 +622,7 @@ async function readPackageJson(pathName: string) {
 
 async function updatePackageJson(
   pathName: string,
-  transform: (json: PackageJson) => Promise<void> | void,
+  transform: (json: PackageJson) => Promise<void> | void
 ) {
   const json = await readPackageJson(pathName)
   await transform(json)
