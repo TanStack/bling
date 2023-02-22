@@ -15,5 +15,9 @@
     "overrides": {
       "@tanstack/bling": "workspace:*"
     }
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "vite": "^4.1.4"
   }
 }
