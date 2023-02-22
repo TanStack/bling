@@ -6,6 +6,7 @@
     "dev": "pnpm -rc --parallel exec 'pnpm dev'",
     "clean-all": "pnpm -rc --parallel exec 'rm -rf build dist node_modules'",
     "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write",
+    "pub": "pnpm publish -r",
     "cipublish": "ts-node scripts/publish.ts",
     "cipublishforce": "CI=true pnpm cipublish"
   },
