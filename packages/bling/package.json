@@ -14,21 +14,31 @@
   "scripts": {
     "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:server --watch\" \"pnpm build:vite --watch\" \"pnpm build:babel --watch\" \"pnpm build:client --watch\"",
     "build": "pnpm build:types && pnpm build:server && pnpm build:vite && pnpm build:babel && pnpm build:client",
-    "build:server": "esbuild src/server.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/server.cjs",
-    "build:vite": "esbuild src/vite.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/vite.cjs",
-    "build:babel": "esbuild src/babel.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/babel.cjs",
-    "build:client": "esbuild src/client.ts --bundle --format=cjs --minify --sourcemap --outfile=dist/client.cjs",
+    "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/server.js",
+    "build:vite": "esbuild src/vite.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/vite.js",
+    "build:babel": "esbuild src/babel.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/babel.js",
+    "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js",
     "build:types": "tsc --emitDeclarationOnly --declaration --skipLibCheck"
   },
   "exports": {
-    "./server": "./dist/server.cjs",
-    "./vite": "./dist/vite.cjs",
-    "./babel": "./dist/babel.cjs",
-    "./client": "./dist/client.cjs",
+    ".": {
+      "browser": "./dist/client.js",
+      "import": "./dist/server.js",
+      "node": "./dist/server.js",
+      "default": "./dist/server.js"
+    },
+    "./server": "./dist/server.js",
+    "./vite": "./dist/vite.js",
+    "./babel": "./dist/babel.js",
+    "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },
+  "types": "./dist/server.d.ts",
   "typesVersions": {
     "*": {
+      ".": [
+        "./dist/server.d.ts"
+      ],
       "server": [
         "./dist/server.d.ts"
       ],
