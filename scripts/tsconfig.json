@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES5",
+    "target": "esnext",
     "module": "commonjs",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "noImplicitAny": true,
     "skipLibCheck": true,
-    "checkJs": true
+    "checkJs": true,
+    "types": ["node"]
   },
   "ts-node": {
     "transpileOnly": true,
