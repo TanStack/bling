@@ -7,7 +7,7 @@ import {
   XBlingOrigin,
   XBlingResponseTypeHeader,
   isRedirectResponse,
-} from './responses'
+} from './utils/responses'
 import type {
   CreateServerFunction,
   Deserializer,

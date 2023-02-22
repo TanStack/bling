@@ -6,7 +6,7 @@ import {
   XBlingContentTypeHeader,
   XBlingOrigin,
   XBlingResponseTypeHeader,
-} from './responses'
+} from './utils/responses'
 
 import type { CreateServerFunction, Serializer, ServerFunction } from './types'
 
