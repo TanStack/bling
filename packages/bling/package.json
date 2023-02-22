@@ -18,7 +18,7 @@
     "build": "pnpm build:types && pnpm build:index && pnpm build:vite && pnpm build:babel && pnpm build:browser",
     "build:index": "esbuild src/index.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/index.js",
     "build:vite": "esbuild src/vite.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/vite.js",
-    "build:babel": "esbuild src/babel.ts --bundle --platform=node --sourcemap --outfile=dist/babel.js",
+    "build:babel": "esbuild src/babel.ts --bundle --platform=node --sourcemap --packages=external --outfile=dist/babel.js",
     "build:browser": "esbuild src/browser.ts --bundle --platform=browser --minify --sourcemap --outfile=dist/browser.js",
     "build:types": "tsc --emitDeclarationOnly --declaration --skipLibCheck"
   },
