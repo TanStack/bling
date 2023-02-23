@@ -46,3 +46,8 @@ ts-perf
 /examples/*/*/package-lock.json
 
 .netlify
+
+# Rust
+/target
+^target/
+target
