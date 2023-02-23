@@ -9,8 +9,7 @@ import { BranchConfig, Commit, Package } from './types'
 
 // Originally ported to TS from https://github.com/remix-run/router/tree/main/scripts/{version,publish}.js
 import path from 'path'
-import { exec, execSync } from 'child_process'
-import fsp from 'fs/promises'
+import { execSync } from 'child_process'
 import chalk from 'chalk'
 import jsonfile from 'jsonfile'
 import semver from 'semver'
@@ -69,10 +68,6 @@ async function run() {
   let range = `${latestTag}..HEAD`
   // let range = ``;
 
-  // If RELEASE_ALL is set via a commit subject or body, all packages will be
-  // released regardless if they have changed files matching the package srcDir.
-  let RELEASE_ALL = false
-
   if (!latestTag || process.env.TAG) {
     if (process.env.TAG) {
       if (!process.env.TAG.startsWith('v')) {
@@ -85,7 +80,6 @@ async function run() {
           `Tag is set to ${process.env.TAG}. This will force release all packages. Publishing...`
         )
       )
-      RELEASE_ALL = true
 
       // Is it a major version?
       if (!semver.patch(process.env.TAG) && !semver.minor(process.env.TAG)) {
@@ -144,12 +138,6 @@ async function run() {
       }
       if (commit.body.includes('BREAKING CHANGE')) {
         releaseLevel = Math.max(releaseLevel, 2)
-      }
-      if (
-        commit.subject.includes('RELEASE_ALL') ||
-        commit.body.includes('RELEASE_ALL')
-      ) {
-        RELEASE_ALL = true
       }
 
       return releaseLevel
