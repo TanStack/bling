@@ -157,43 +157,6 @@ async function run() {
     -1
   )
 
-  const changedFiles: string[] = process.env.TAG
-    ? []
-    : execSync(`git diff ${latestTag} --name-only`)
-        .toString()
-        .split('\n')
-        .filter(Boolean)
-
-  const changedPackages = RELEASE_ALL
-    ? packages
-    : changedFiles.reduce((changedPackages, file) => {
-        const pkg = packages.find((p) =>
-          file.startsWith(path.join('packages', p.packageDir, p.srcDir))
-        )
-        if (pkg && !changedPackages.find((d) => d.name === pkg.name)) {
-          changedPackages.push(pkg)
-        }
-        return changedPackages
-      }, [] as Package[])
-
-  // If a package has a dependency that has been updated, we need to update the
-  // package that depends on it as well.
-  await Promise.all(
-    packages.map(async (pkg) => {
-      const pkgJson = await readPackageJson(
-        path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json')
-      )
-      if (
-        Object.keys(pkgJson.dependencies ?? {})?.find((dep) =>
-          changedPackages.find((d) => d.name === dep)
-        ) &&
-        !changedPackages.find((d) => d.name === pkg.name)
-      ) {
-        changedPackages.push(pkg)
-      }
-    })
-  )
-
   if (!process.env.TAG) {
     if (recommendedReleaseLevel === 2) {
       console.info(
@@ -340,8 +303,8 @@ async function run() {
     )}`,
     `## Changes`,
     changelogCommitsMd,
-    `## Packages`,
-    changedPackages.map((d) => `- ${d.name}@${version}`).join('\n'),
+    // `## Packages`,
+    // changedPackages.map((d) => `- ${d.name}@${version}`).join('\n'),
   ].join('\n\n')
 
   console.info('Generating changelog...')
@@ -405,85 +368,52 @@ async function run() {
   execSync(`pnpm test:ci`, { encoding: 'utf8' })
   console.info('')
 
-  console.info(`Updating all changed packages to version ${version}...`)
-  // Update each package to the new version
-  for (const pkg of changedPackages) {
+  console.info(`Updating all packages to version ${version}...`)
+  // Update all packages to the new version (and update their dependencies to each other)
+  for (const pkg of packages) {
     console.info(`  Updating ${pkg.name} version to ${version}...`)
 
     await updatePackageJson(
       path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json'),
-      (config) => {
+      async (config) => {
         config.version = version
+
+        await Promise.all(
+          Object.keys(config.dependencies ?? {}).map(async (dep) => {
+            const depPackage = packages.find((d) => d.name === dep)
+            if (depPackage) {
+              if (
+                config.dependencies?.[dep] &&
+                config.dependencies[dep] !== version
+              ) {
+                console.info(
+                  `  Updating ${pkg.name}'s dependency on ${dep} to version ${version}.`
+                )
+                config.dependencies[dep] = version
+              }
+            }
+          })
+        )
+
+        await Promise.all(
+          Object.keys(config.peerDependencies ?? {}).map(async (peerDep) => {
+            const peerDepPackage = packages.find((d) => d.name === peerDep)
+            if (peerDepPackage) {
+              if (
+                config.peerDependencies?.[peerDep] &&
+                config.peerDependencies[peerDep] !== version
+              ) {
+                console.info(
+                  `  Updating ${pkg.name}'s peerDependency on ${peerDep} to version ${version}.`
+                )
+                config.peerDependencies[peerDep] = version
+              }
+            }
+          })
+        )
       }
     )
   }
-
-  // console.info(`Updating all package dependencies to latest versions...`)
-  // // Update all changed package dependencies to their correct versions
-  // for (const pkg of packages) {
-  //   await updatePackageJson(
-  //     path.resolve(rootDir, 'packages', pkg.packageDir, 'package.json'),
-  //     async (config) => {
-  //       await Promise.all(
-  //         (pkg.dependencies ?? []).map(async (dep) => {
-  //           const depPackage = packages.find((d) => d.name === dep)
-
-  //           if (!depPackage) {
-  //             throw new Error(`Could not find package ${dep}`)
-  //           }
-
-  //           const depVersion = await getPackageVersion(
-  //             path.resolve(
-  //               rootDir,
-  //               'packages',
-  //               depPackage.packageDir,
-  //               'package.json',
-  //             ),
-  //           )
-
-  //           if (
-  //             config.dependencies?.[dep] &&
-  //             config.dependencies[dep] !== depVersion
-  //           ) {
-  //             console.info(
-  //               `  Updating ${pkg.name}'s dependency on ${dep} to version ${depVersion}.`,
-  //             )
-  //             config.dependencies[dep] = depVersion
-  //           }
-  //         }),
-  //       )
-
-  //       await Promise.all(
-  //         (pkg.peerDependencies ?? []).map(async (peerDep) => {
-  //           const peerDepPackage = packages.find((d) => d.name === peerDep)
-
-  //           if (!peerDepPackage) {
-  //             throw new Error(`Could not find package ${peerDep}`)
-  //           }
-
-  //           const depVersion = await getPackageVersion(
-  //             path.resolve(
-  //               rootDir,
-  //               'packages',
-  //               peerDepPackage.packageDir,
-  //               'package.json',
-  //             ),
-  //           )
-
-  //           if (
-  //             config.peerDependencies?.[peerDep] &&
-  //             config.peerDependencies[peerDep] !== depVersion
-  //           ) {
-  //             console.info(
-  //               `  Updating ${pkg.name}'s peerDependency on ${peerDep} to version ${depVersion}.`,
-  //             )
-  //             config.peerDependencies[peerDep] = depVersion
-  //           }
-  //         }),
-  //       )
-  //     },
-  //   )
-  // }
 
   // console.info(`Updating all example dependencies...`)
   // await Promise.all(
@@ -556,7 +486,7 @@ async function run() {
   console.info(`Publishing all packages to npm with tag "${npmTag}"`)
 
   // Publish each package
-  changedPackages.map((pkg) => {
+  packages.map((pkg) => {
     const packageDir = path.join(rootDir, 'packages', pkg.packageDir)
     const cmd = `cd ${packageDir} && pnpm publish --tag ${npmTag} --access=public --no-git-checks`
     console.info(
