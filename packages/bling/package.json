@@ -21,23 +21,17 @@
     "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js"
   },
   "exports": {
-    ".": {
-      "browser": "./dist/client.js",
-      "import": "./dist/server.js",
-      "node": "./dist/server.js",
-      "default": "./dist/server.js"
-    },
+    ".": "./dist/client.js",
     "./server": "./dist/server.js",
     "./vite": "./dist/vite.js",
     "./babel": "./dist/babel.js",
-    "./client": "./dist/client.js",
     "./package.json": "./package.json"
   },
   "types": "./dist/server.d.ts",
   "typesVersions": {
     "*": {
       ".": [
-        "./dist/server.d.ts"
+        "./dist/client.d.ts"
       ],
       "server": [
         "./dist/server.d.ts"
@@ -47,9 +41,6 @@
       ],
       "babel": [
         "./dist/babel.d.ts"
-      ],
-      "client": [
-        "./dist/client.d.ts"
       ]
     }
   },

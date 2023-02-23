@@ -1,3 +1,5 @@
+import { JsonResponse } from '../types'
+
 export const XBlingStatusCodeHeader = 'x-bling-status-code'
 export const XBlingLocationHeader = 'x-bling-location'
 export const LocationHeader = 'Location'
@@ -10,10 +12,10 @@ export const JSONResponseType = 'application/json'
 /**
  * A JSON response. Converts `data` to JSON and sets the `Content-Type` header.
  */
-export function json<Data>(
-  data: Data,
-  init: number | ResponseInit = {},
-): Response {
+export function json<TData>(
+  data: TData,
+  init: number | ResponseInit = {}
+): JsonResponse<TData> {
   let responseInit: any = init
   if (typeof init === 'number') {
     responseInit = { status: init }
@@ -39,7 +41,7 @@ export function json<Data>(
  */
 export function redirect(
   url: string,
-  init: number | ResponseInit = 302,
+  init: number | ResponseInit = 302
 ): Response {
   let responseInit = init
   if (typeof responseInit === 'number') {
@@ -71,7 +73,7 @@ export function redirect(
 
 export function eventStream(
   request: Request,
-  init: (send: (event: string, data: any) => void) => () => void,
+  init: (send: (event: string, data: any) => void) => () => void
 ) {
   let stream = new ReadableStream({
     start(controller) {
@@ -114,7 +116,7 @@ export function isResponse(value: any): value is Response {
 const redirectStatusCodes = new Set([204, 301, 302, 303, 307, 308])
 
 export function isRedirectResponse(
-  response: Response | any,
+  response: Response | any
 ): response is Response {
   return (
     response &&
@@ -122,3 +124,68 @@ export function isRedirectResponse(
     redirectStatusCodes.has(response.status)
   )
 }
+
+export function mergeHeaders(...objs: (Headers | HeadersInit | undefined)[]) {
+  const allHeaders: any = {}
+
+  for (const header of objs) {
+    if (!header) continue
+    const headers: Headers = new Headers(header)
+
+    for (const [key, value] of (headers as any).entries()) {
+      if (value === undefined || value === 'undefined') {
+        delete allHeaders[key]
+      } else {
+        allHeaders[key] = value
+      }
+    }
+  }
+
+  return new Headers(allHeaders)
+}
+
+export async function parseResponse(response: Response) {
+  if (response instanceof Response) {
+    const contentType =
+      response.headers.get(XBlingContentTypeHeader) ||
+      response.headers.get(ContentTypeHeader) ||
+      ''
+
+    if (contentType.includes('json')) {
+      return await response.json()
+    } else if (contentType.includes('text')) {
+      return await response.text()
+    } else if (contentType.includes('error')) {
+      const data = await response.json()
+      const error = new Error(data.error.message)
+      if (data.error.stack) {
+        error.stack = data.error.stack
+      }
+      return error
+    } else if (contentType.includes('response')) {
+      if (response.status === 204 && response.headers.get(LocationHeader)) {
+        return redirect(response.headers.get(LocationHeader)!)
+      }
+      return response
+    } else {
+      if (response.status === 200) {
+        const text = await response.text()
+        try {
+          return JSON.parse(text)
+        } catch {}
+      }
+      if (response.status === 204 && response.headers.get(LocationHeader)) {
+        return redirect(response.headers.get(LocationHeader)!)
+      }
+      return response
+    }
+  }
+
+  return response
+}
+
+// export function json<TData>(data: TData, responseInit: ResponseInit = {}) {
+//   responseInit.headers = new Headers(responseInit.headers)
+//   responseInit.headers.set(XBlingContentTypeHeader, 'json')
+//   return new Response(JSON.stringify(data), responseInit) as JsonResponse<TData>
+// }

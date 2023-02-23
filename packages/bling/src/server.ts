@@ -7,12 +7,44 @@ import {
   XBlingOrigin,
   XBlingResponseTypeHeader,
   isRedirectResponse,
+  mergeHeaders,
+  parseResponse,
 } from './utils/responses'
 import type {
-  CreateServerFunction,
   Deserializer,
+  FetchEvent,
+  ServerFunction,
   ServerFunctionEvent,
 } from './types'
+
+export { json } from './utils/responses'
+
+export type CreateServerFunction = (<
+  E extends any[],
+  T extends (...args: [...E]) => any
+>(
+  fn: T
+) => ServerFunction<E, T>) & {
+  // SERVER
+  getHandler: (route: string) => any
+  createHandler: (fn: any, hash: string, serverResource: boolean) => any
+  registerHandler: (route: string, handler: any) => any
+  hasHandler: (route: string) => boolean
+  parseRequest: (event: ServerFunctionEvent) => Promise<[string, any[]]>
+  respondWith: (
+    event: ServerFunctionEvent,
+    data: Response | Error | string | object,
+    responseType: 'throw' | 'return'
+  ) => void
+  normalizeArgs: (
+    path: string,
+    that: ServerFunctionEvent | any,
+    args: any[],
+    meta: any
+  ) => [any, any[]]
+  fetch(route: string, init?: RequestInit): Promise<Response>
+  addDeserializer(deserializer: Deserializer): void
+} & FetchEvent
 
 const deserializers: Deserializer[] = []
 
@@ -76,22 +108,26 @@ server$.respondWith = function (
         statusText: 'Redirected',
         headers: headers,
       })
-    } else if (data.status === 101) {
+    }
+
+    if (data.status === 101) {
       // this is a websocket upgrade, so we don't want to modify the response
       return data
-    } else {
-      let headers = new Headers(data.headers)
-      headers.set(XBlingOrigin, 'server')
-      headers.set(XBlingResponseTypeHeader, responseType)
-      headers.set(XBlingContentTypeHeader, 'response')
-
-      return new Response(data.body, {
-        status: data.status,
-        statusText: data.statusText,
-        headers,
-      })
     }
-  } else if (data instanceof Error) {
+
+    let headers = new Headers(data.headers)
+    headers.set(XBlingOrigin, 'server')
+    headers.set(XBlingResponseTypeHeader, responseType)
+    headers.set(XBlingContentTypeHeader, 'response')
+
+    return new Response(data.body, {
+      status: data.status,
+      statusText: data.statusText,
+      headers,
+    })
+  }
+
+  if (data instanceof Error) {
     console.error(data)
     return new Response(
       JSON.stringify({
@@ -108,7 +144,9 @@ server$.respondWith = function (
         },
       }
     )
-  } else if (
+  }
+
+  if (
     typeof data === 'object' ||
     typeof data === 'string' ||
     typeof data === 'number' ||
@@ -189,10 +227,11 @@ server$.createHandler = (impl, route, meta) => {
     )
 
     const execute = async () => {
-      console.log('Executing', route)
-      if (normalizedArgs) console.log(`  Payload: ${normalizedArgs}`)
+      console.log(`Executing server function: ${route}`)
+      if (normalizedArgs) console.log(`  Fn Payload: ${normalizedArgs}`)
       try {
-        return impl.call(normalizedThis, ...normalizedArgs)
+        // Do the same parsing of the result as we do on the client
+        return parseResponse(await impl.call(normalizedThis, ...normalizedArgs))
       } catch (e) {
         if (e instanceof Error && /[A-Za-z]+ is not defined/.test(e.message)) {
           const error = new Error(

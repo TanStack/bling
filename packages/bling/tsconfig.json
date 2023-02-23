@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES6"],
+    "target": "ESNext",
+    "module": "ES2020",
+    "moduleResolution": "node",
     "strict": true,
     "outDir": "./dist"
   },

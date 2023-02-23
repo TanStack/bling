@@ -1,53 +1,41 @@
 import {
   ContentTypeHeader,
   JSONResponseType,
-  LocationHeader,
-  redirect,
+  mergeHeaders,
+  parseResponse,
   XBlingContentTypeHeader,
   XBlingOrigin,
   XBlingResponseTypeHeader,
 } from './utils/responses'
 
-import type { CreateServerFunction, Serializer, ServerFunction } from './types'
+import type {
+  Deserializer,
+  FetchEvent,
+  Serializer,
+  ServerFunction,
+} from './types'
 
-export const server$: CreateServerFunction = ((_fn: any) => {
+export { json } from './utils/responses'
+
+export type CreateClientServerFunction = (<
+  E extends any[],
+  T extends (...args: [...E]) => any
+>(
+  fn: T
+) => ServerFunction<E, T>) & {
+  addSerializer(serializer: Serializer): void
+  createFetcher(
+    route: string,
+    serverResource: boolean
+  ): ServerFunction<any, any>
+  fetch(route: string, init?: RequestInit): Promise<Response>
+  createRequestInit: (path: string, args: any[], meta: any) => RequestInit
+  addDeserializer(deserializer: Deserializer): void
+} & FetchEvent
+
+export const server$: CreateClientServerFunction = ((_fn: any) => {
   throw new Error('Should be compiled away')
-}) as unknown as CreateServerFunction
-
-server$.parseResponse = async (request: Request, response: Response) => {
-  const contentType =
-    response.headers.get(XBlingContentTypeHeader) ||
-    response.headers.get(ContentTypeHeader) ||
-    ''
-  if (contentType.includes('json')) {
-    return await response.json()
-  } else if (contentType.includes('text')) {
-    return await response.text()
-  } else if (contentType.includes('error')) {
-    const data = await response.json()
-    const error = new Error(data.error.message)
-    if (data.error.stack) {
-      error.stack = data.error.stack
-    }
-    return error
-  } else if (contentType.includes('response')) {
-    if (response.status === 204 && response.headers.get(LocationHeader)) {
-      return redirect(response.headers.get(LocationHeader)!)
-    }
-    return response
-  } else {
-    if (response.status === 200) {
-      const text = await response.text()
-      try {
-        return JSON.parse(text)
-      } catch {}
-    }
-    if (response.status === 204 && response.headers.get(LocationHeader)) {
-      return redirect(response.headers.get(LocationHeader)!)
-    }
-    return response
-  }
-}
+}) as unknown as CreateClientServerFunction
 
 let serializers: Serializer[] = []
 
@@ -85,25 +73,6 @@ server$.createRequestInit = function (route, args: any[], meta): RequestInit {
 
 type ServerCall = (route: string, init: RequestInit) => Promise<Response>
 
-function mergeHeaders(...objs: (Headers | HeadersInit | undefined)[]) {
-  const allHeaders: any = {}
-
-  for (const header of objs) {
-    if (!header) continue
-    const headers: Headers = new Headers(header)
-
-    for (const [key, value] of (headers as any).entries()) {
-      if (value === undefined || value === 'undefined') {
-        delete allHeaders[key]
-      } else {
-        allHeaders[key] = value
-      }
-    }
-  }
-
-  return new Headers(allHeaders)
-}
-
 server$.createFetcher = (route, meta) => {
   let fetcher: any = (...args: any[]) => {
     const requestInit = server$.createRequestInit(route, args, meta)
@@ -138,9 +107,9 @@ server$.call = async function (route: string, init: RequestInit) {
 
   // // throws response, error, form error, json object, string
   if (response.headers.get(XBlingResponseTypeHeader) === 'throw') {
-    throw await server$.parseResponse(request, response)
+    throw await parseResponse(response)
   } else {
-    return await server$.parseResponse(request, response)
+    return await parseResponse(response)
   }
 } as any
 

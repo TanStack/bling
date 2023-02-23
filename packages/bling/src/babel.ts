@@ -233,7 +233,18 @@ function transformServer({ types: t, template }) {
               FunctionDeclaration: markFunction,
               FunctionExpression: markFunction,
               ArrowFunctionExpression: markFunction,
-              ImportSpecifier: markImport,
+              ImportSpecifier: function (path, state) {
+                // Rewrite imports to `@tanstack/bling` to `@tanstack/bling/server` during SSR
+                if (state.opts.ssr && path.node.imported.name === 'server$') {
+                  const importDeclaration = path.findParent((p) =>
+                    p.isImportDeclaration()
+                  )
+                  if (importDeclaration) {
+                    importDeclaration.node.source.value += '/server'
+                  }
+                }
+                markImport(path, state)
+              },
               ImportDefaultSpecifier: markImport,
               ImportNamespaceSpecifier: markImport,
             },

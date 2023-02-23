@@ -24,47 +24,16 @@ export interface ServerFunctionEvent extends FetchEvent {
 
 export type ServerFunction<
   E extends any[],
-  T extends (...args: [...E]) => any
-> = ((...p: Parameters<T>) => Promise<Awaited<ReturnType<T>>>) & {
+  T extends (...args: [...E]) => any,
+  TReturn = Awaited<ReturnType<T>> extends JsonResponse<infer R>
+    ? R
+    : ReturnType<T>
+> = ((...p: Parameters<T>) => Promise<Awaited<TReturn>>) & {
   url: string
-  fetch: (init: RequestInit) => Promise<Awaited<ReturnType<T>>>
+  fetch: (init: RequestInit) => Promise<Awaited<TReturn>>
   withRequest: (
     init: Partial<RequestInit>
-  ) => (...p: Parameters<T>) => Promise<Awaited<ReturnType<T>>>
+  ) => (...p: Parameters<T>) => Promise<Awaited<TReturn>>
 }
 
-export type CreateServerFunction = (<
-  E extends any[],
-  T extends (...args: [...E]) => any
->(
-  fn: T
-) => ServerFunction<E, T>) & {
-  // SERVER
-  getHandler: (route: string) => any
-  createHandler: (fn: any, hash: string, serverResource: boolean) => any
-  registerHandler: (route: string, handler: any) => any
-  hasHandler: (route: string) => boolean
-  parseRequest: (event: ServerFunctionEvent) => Promise<[string, any[]]>
-  respondWith: (
-    event: ServerFunctionEvent,
-    data: Response | Error | string | object,
-    responseType: 'throw' | 'return'
-  ) => void
-  normalizeArgs: (
-    path: string,
-    that: ServerFunctionEvent | any,
-    args: any[],
-    meta: any
-  ) => [any, any[]]
-  addSerializer(serializer: Serializer): void
-
-  // CLIENT
-  createFetcher(
-    route: string,
-    serverResource: boolean
-  ): ServerFunction<any, any>
-  fetch(route: string, init?: RequestInit): Promise<Response>
-  parseResponse: (request: Request, response: Response) => Promise<any>
-  createRequestInit: (path: string, args: any[], meta: any) => RequestInit
-  addDeserializer(deserializer: Deserializer): void
-} & FetchEvent
+export interface JsonResponse<TData> extends Response {}
