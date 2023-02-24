@@ -20,7 +20,7 @@ import type {
   ServerFnCtx,
 } from './types'
 
-export { json } from './utils/utils'
+export * from './utils/utils'
 
 const deserializers: Deserializer[] = []
 

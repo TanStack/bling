@@ -9,7 +9,7 @@ import {
 
 import type { AnyServerFn, Serializer, ServerFnOpts, ServerFn } from './types'
 
-export { json } from './utils/utils'
+export * from './utils/utils'
 
 //
 
