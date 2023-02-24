@@ -1,5 +1,5 @@
 # @TanStack/Bling
 
-Framework agnostic transpilation utilities for client/server RPCs, env isoluation, islands, module splitting, and more.
+Framework agnostic transpilation utilities for client/server RPCs, env isolation, islands, module splitting, and more.
 
-<!-- Use the force, Luke! -->
+<!-- Use the force, Luke! -- Obi Wan Kenobi -->
