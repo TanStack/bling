@@ -25,18 +25,22 @@ export function addSerializer({ apply, serialize }: Serializer) {
   serializers.push({ apply, serialize })
 }
 
-export type ClientServerFn = (<T extends AnyServerFn>(
+export type ClientServerFnImpl = <T extends AnyServerFn>(
   fn: T,
   opts?: ServerFnOpts
-) => ServerFn<T>) & {
+) => ServerFn<T>
+
+export type ClientServerFnMethods = {
   createFetcher(route: string, defualtOpts: ServerFnOpts): ServerFn<any>
 }
 
-const _server$ = (() => {
+export type ClientServerFn = ClientServerFnImpl & ClientServerFnMethods
+
+const serverImpl = (() => {
   throw new Error('Should be compiled away')
 }) as any
 
-const _serverProps: NonFnProps<ClientServerFn> = {
+const serverMethods: ClientServerFnMethods = {
   createFetcher: (route: string, defaultOpts?: ServerFnOpts) => {
     return createFetcher(route, async (payload: any, opts?: ServerFnOpts) => {
       let payloadInit = payloadRequestInit(payload, serializers)
@@ -77,4 +81,4 @@ const _serverProps: NonFnProps<ClientServerFn> = {
   // },
 }
 
-export const server$: ClientServerFn = Object.assign(_server$, _serverProps)
+export const server$: ClientServerFn = Object.assign(serverImpl, serverMethods)

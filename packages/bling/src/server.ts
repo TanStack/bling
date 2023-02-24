@@ -30,10 +30,7 @@ export function addDeserializer(deserializer: Deserializer) {
   deserializers.push(deserializer)
 }
 
-export type ServerServerFn = (<T extends AnyServerFn>(
-  fn: T,
-  opts?: ServerFnOpts
-) => ServerFn<T>) & {
+type ServerServerFnMethods = {
   createHandler(
     fn: AnyServerFn,
     route: string,
@@ -41,11 +38,18 @@ export type ServerServerFn = (<T extends AnyServerFn>(
   ): ServerFn<any>
 }
 
-const _server$ = (() => {
+type ServerServerFnImpl = <T extends AnyServerFn>(
+  fn: T,
+  opts?: ServerFnOpts
+) => ServerFn<T>
+
+export type ServerServerFn = ServerServerFnImpl & ServerServerFnMethods
+
+const serverImpl = (() => {
   throw new Error('Should be compiled away')
 }) as any
 
-const _serverProps: NonFnProps<ServerServerFn> = {
+const serverMethods: ServerServerFnMethods = {
   createHandler: (
     fn: AnyServerFn,
     route: string,
@@ -106,7 +110,7 @@ const _serverProps: NonFnProps<ServerServerFn> = {
   // },
 }
 
-export const server$: ServerServerFn = Object.assign(_server$, _serverProps)
+export const server$: ServerServerFn = Object.assign(serverImpl, serverMethods)
 
 async function parseRequest(event: ServerFnCtx) {
   let request = event.request
