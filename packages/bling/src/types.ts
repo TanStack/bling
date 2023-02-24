@@ -26,17 +26,9 @@ export type ServerFnImpl<T extends AnyServerFn> = (
 
 export type ServerFnMethods<T extends AnyServerFn> = {
   url: string
-  query: (
-    payload: Parameters<T>['0'],
-    opts: ServerFnOpts
-  ) => Promise<Awaited<ServerFnReturn<T>>>
-  mutate: (
-    payload: Parameters<T>['0'],
-    opts: ServerFnOpts
-  ) => Promise<Awaited<ServerFnReturn<T>>>
   fetch: (
     init: RequestInit,
-    opts: ServerFnOpts
+    opts?: ServerFnOpts
   ) => Promise<Awaited<ServerFnReturn<T>>>
 }
 

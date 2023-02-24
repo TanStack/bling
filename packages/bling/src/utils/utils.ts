@@ -249,17 +249,5 @@ export function createFetcher<T extends AnyServerFn>(
     fetch: (request: RequestInit, opts: ServerFnOpts) => {
       return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
     },
-    query: (payload: any, opts: ServerFnOpts) => {
-      return fetcherImpl(
-        payload,
-        mergeServerOpts({ request: { method: 'GET' } }, opts)
-      )
-    },
-    mutate: (payload: any, opts: ServerFnOpts) => {
-      return fetcherImpl(
-        payload,
-        mergeServerOpts({ request: { method: 'POST' } }, opts)
-      )
-    },
   } as ServerFnMethods<T>) as ServerFn<T>
 }
