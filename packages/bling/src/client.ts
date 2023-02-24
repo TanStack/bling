@@ -7,13 +7,7 @@ import {
   XBlingResponseTypeHeader,
 } from './utils/utils'
 
-import type {
-  AnyServerFn,
-  Serializer,
-  ServerFnOpts,
-  ServerFn,
-  NonFnProps,
-} from './types'
+import type { AnyServerFn, Serializer, ServerFnOpts, ServerFn } from './types'
 
 export { json } from './utils/utils'
 

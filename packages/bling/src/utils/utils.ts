@@ -1,7 +1,6 @@
 import {
   AnyServerFn,
   JsonResponse,
-  NonFnProps,
   Serializer,
   ServerFn,
   ServerFnImpl,

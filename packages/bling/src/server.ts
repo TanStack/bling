@@ -9,7 +9,6 @@ import {
   createFetcher,
   isRedirectResponse,
   mergeRequestInits,
-  mergeServerOpts,
   parseResponse,
   payloadRequestInit,
 } from './utils/utils'
@@ -19,7 +18,6 @@ import type {
   ServerFnOpts,
   ServerFn,
   ServerFnCtx,
-  NonFnProps,
 } from './types'
 
 export { json } from './utils/utils'
