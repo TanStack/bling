@@ -2,9 +2,9 @@
 
 Framework agnostic transpilation utilities for client/server RPCs, env isoluation, islands, module splitting, and more.
 
-## API
+# API
 
-## Export: `server$`
+## `server$`
 
 The `server$` function is used to create a server-side RPC. It takes a function as its only argument, and returns a function that can be called from the client-side.
 
@@ -109,7 +109,5 @@ A function that can be called isomorphically from server or client side code to 
       - `request`
         - The request object to be passed to the `fetch` call to the server function.
         - Can be used to add headers, signals, etc.
-
-#### `options`
 
 <!-- Use the force, Luke! -->
