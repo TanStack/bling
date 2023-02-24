@@ -6,57 +6,109 @@ import {
   XBlingLocationHeader,
   XBlingOrigin,
   XBlingResponseTypeHeader,
+  createFetcher,
   isRedirectResponse,
-  mergeHeaders,
+  mergeRequestInits,
+  mergeServerOpts,
   parseResponse,
-} from './utils/responses'
+  payloadRequestInit,
+} from './utils/utils'
 import type {
+  AnyServerFn,
   Deserializer,
-  FetchEvent,
-  ServerFunction,
-  ServerFunctionEvent,
+  ServerFnOpts,
+  ServerFn,
+  ServerFnCtx,
+  NonFnProps,
 } from './types'
 
-export { json } from './utils/responses'
-
-export type CreateServerFunction = (<
-  E extends any[],
-  T extends (...args: [...E]) => any
->(
-  fn: T
-) => ServerFunction<E, T>) & {
-  // SERVER
-  getHandler: (route: string) => any
-  createHandler: (fn: any, hash: string, serverResource: boolean) => any
-  registerHandler: (route: string, handler: any) => any
-  hasHandler: (route: string) => boolean
-  parseRequest: (event: ServerFunctionEvent) => Promise<[string, any[]]>
-  respondWith: (
-    event: ServerFunctionEvent,
-    data: Response | Error | string | object,
-    responseType: 'throw' | 'return'
-  ) => void
-  normalizeArgs: (
-    path: string,
-    that: ServerFunctionEvent | any,
-    args: any[],
-    meta: any
-  ) => [any, any[]]
-  fetch(route: string, init?: RequestInit): Promise<Response>
-  addDeserializer(deserializer: Deserializer): void
-} & FetchEvent
+export { json } from './utils/utils'
 
 const deserializers: Deserializer[] = []
 
-export const server$: CreateServerFunction = ((_fn: any) => {
-  throw new Error('Should be compiled away')
-}) as unknown as CreateServerFunction
-
-server$.addDeserializer = (deserializer: Deserializer) => {
+export function addDeserializer(deserializer: Deserializer) {
   deserializers.push(deserializer)
 }
 
-server$.parseRequest = async function (event: ServerFunctionEvent) {
+export type ServerServerFn = (<T extends AnyServerFn>(
+  fn: T,
+  opts?: ServerFnOpts
+) => ServerFn<T>) & {
+  createHandler(
+    fn: AnyServerFn,
+    route: string,
+    opts: ServerFnOpts
+  ): ServerFn<any>
+}
+
+const _server$ = (() => {
+  throw new Error('Should be compiled away')
+}) as any
+
+const _serverProps: NonFnProps<ServerServerFn> = {
+  createHandler: (
+    fn: AnyServerFn,
+    route: string,
+    defaultOpts?: ServerFnOpts
+  ): ServerFn<any> => {
+    return createFetcher(route, async (payload: any, opts?: ServerFnOpts) => {
+      console.log(`Executing server function: ${route}`)
+      if (payload) console.log(`  Fn Payload: ${payload}`)
+
+      let payloadInit = payloadRequestInit(payload, false)
+
+      // Even though we're not crossing the network, we still need to
+      // create a Request object to pass to the server function
+      const request = new Request(
+        route,
+        mergeRequestInits(
+          {
+            method: 'POST',
+            headers: {
+              [XBlingOrigin]: 'server',
+            },
+          },
+          payloadInit,
+          defaultOpts?.request,
+          opts?.request
+        )
+      )
+
+      try {
+        // Do the same parsing of the result as we do on the client
+        return parseResponse(
+          await fn(payload, {
+            request: request,
+          })
+        )
+      } catch (e) {
+        if (e instanceof Error && /[A-Za-z]+ is not defined/.test(e.message)) {
+          const error = new Error(
+            e.message +
+              '\n' +
+              ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
+          )
+          error.stack = e.stack ?? ''
+          throw error
+        }
+        throw e
+      }
+    })
+  },
+  // used to fetch from an API route on the server or client, without falling into
+  // fetch problems on the server
+  // fetch: async function (route: string | URL, init: RequestInit) {
+  //   if (route instanceof URL || route.startsWith('http')) {
+  //     return await fetch(route, init)
+  //   }
+  //   const request = new Request(new URL(route, window.location.href).href, init)
+  //   return await fetch(request)
+  // },
+}
+
+export const server$: ServerServerFn = Object.assign(_server$, _serverProps)
+
+async function parseRequest(event: ServerFnCtx) {
   let request = event.request
   let contentType = request.headers.get(ContentTypeHeader)
   let name = new URL(request.url).pathname,
@@ -88,8 +140,8 @@ server$.parseRequest = async function (event: ServerFunctionEvent) {
   return [name, args]
 }
 
-server$.respondWith = function (
-  { request }: ServerFunctionEvent,
+function respondWith(
+  { request }: ServerFnCtx,
   data: Response | Error | string | object,
   responseType: 'throw' | 'return'
 ) {
@@ -172,13 +224,13 @@ server$.respondWith = function (
   })
 }
 
-export async function handleEvent(event: ServerFunctionEvent) {
+export async function handleEvent(event: ServerFnCtx) {
   const url = new URL(event.request.url)
 
-  if (server$.hasHandler(url.pathname)) {
+  if (hasHandler(url.pathname)) {
     try {
-      let [name, args] = await server$.parseRequest(event)
-      let handler = server$.getHandler(name)
+      let [name, args] = await parseRequest(event)
+      let handler = getHandler(name)
       if (!handler) {
         throw {
           status: 404,
@@ -189,87 +241,30 @@ export async function handleEvent(event: ServerFunctionEvent) {
         event,
         ...(Array.isArray(args) ? args : [args])
       )
-      return server$.respondWith(event, data, 'return')
+      return respondWith(event, data, 'return')
     } catch (error) {
-      return server$.respondWith(event, error as Error, 'throw')
+      return respondWith(event, error as Error, 'throw')
     }
   }
 
   return null
 }
 
-server$.normalizeArgs = (
-  path: string,
-  that: ServerFunctionEvent | any,
-  args: any[],
-  meta: any
-) => {
-  let ctx: any | undefined
-  if (typeof that === 'object') {
-    ctx = that
-  }
-
-  return [ctx, args]
-}
-
 const handlers = new Map()
-// server$.requestContext = null;
-server$.createHandler = (impl, route, meta) => {
-  let serverFunction: any = function (
-    this: ServerFunctionEvent | any,
-    ...args: any[]
-  ) {
-    let [normalizedThis, normalizedArgs] = server$.normalizeArgs(
-      route,
-      this,
-      args,
-      meta
-    )
 
-    const execute = async () => {
-      console.log(`Executing server function: ${route}`)
-      if (normalizedArgs) console.log(`  Fn Payload: ${normalizedArgs}`)
-      try {
-        // Do the same parsing of the result as we do on the client
-        return parseResponse(await impl.call(normalizedThis, ...normalizedArgs))
-      } catch (e) {
-        if (e instanceof Error && /[A-Za-z]+ is not defined/.test(e.message)) {
-          const error = new Error(
-            e.message +
-              '\n' +
-              ' You probably are using a variable defined in a closure in your server function.'
-          )
-          error.stack = e.stack ?? ''
-          throw error
-        }
-        throw e
-      }
-    }
-
-    return execute()
-  }
-
-  serverFunction.url = route
-  serverFunction.action = function (...args: any[]) {
-    return serverFunction.call(this, ...args)
-  }
-
-  return serverFunction
-}
-
-server$.registerHandler = function (route, handler) {
+export function registerHandler(route: string, handler: any): any {
   console.log('Registering handler', route)
   handlers.set(route, handler)
 }
 
-server$.getHandler = function (route) {
+export function getHandler(route: string) {
   return handlers.get(route)
 }
 
-server$.hasHandler = function (route) {
+export function hasHandler(route: string) {
   return handlers.has(route)
 }
 
 // used to fetch from an API route on the server or client, without falling into
 // fetch problems on the server
-server$.fetch = fetch
+// server$.fetch = fetch

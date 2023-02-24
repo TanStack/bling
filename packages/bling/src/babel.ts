@@ -116,6 +116,7 @@ function transformServer({ types: t, template }) {
                   path.node.callee.name === 'server$'
                 ) {
                   const serverFn = path.get('arguments')[0]
+                  const serverFnOpts = path.get('arguments')[1]
                   let program = path.findParent((p) => t.isProgram(p))
                   let statement = path.findParent((p) =>
                     program.get('body').includes(p)
@@ -126,7 +127,6 @@ function transformServer({ types: t, template }) {
                       p.isFunctionDeclaration() ||
                       p.isObjectProperty()
                   )
-                  const serverResource = path.getData('serverResource') ?? false
                   let serverIndex = state.servers++
                   let hasher = state.opts.minify ? hashFn : (str) => str
                   const fName = state.filename
@@ -197,10 +197,11 @@ function transformServer({ types: t, template }) {
                   if (state.opts.ssr) {
                     statement.insertBefore(
                       template(`
-                      const $$server_module${serverIndex} = server$.createHandler(%%source%%, "${route}", ${serverResource});
+                      const $$server_module${serverIndex} = server$.createHandler(%%source%%, "${route}", %%options%%);
                       server$.registerHandler("${route}", $$server_module${serverIndex});
                       `)({
                         source: serverFn.node,
+                        options: serverFnOpts.node,
                       })
                     )
                   } else {
@@ -209,10 +210,10 @@ function transformServer({ types: t, template }) {
                         `
                         ${
                           process.env.TEST_ENV === 'client'
-                            ? `server$.registerHandler("${route}", server$.createHandler(%%source%%, "${route}", ${serverResource}));`
+                            ? `server$.registerHandler("${route}", server$.createHandler(%%source%%, "${route}", %%options%%));`
                             : ``
                         }
-                        const $$server_module${serverIndex} = server$.createFetcher("${route}", ${serverResource});`,
+                        const $$server_module${serverIndex} = server$.createFetcher("${route}", %%options%%);`,
                         {
                           syntacticPlaceholders: true,
                         }
@@ -220,6 +221,7 @@ function transformServer({ types: t, template }) {
                         process.env.TEST_ENV === 'client'
                           ? {
                               source: serverFn.node,
+                              options: serverFnOpts.node,
                             }
                           : {}
                       )

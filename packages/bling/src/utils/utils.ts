@@ -1,4 +1,13 @@
-import { JsonResponse } from '../types'
+import {
+  AnyServerFn,
+  JsonResponse,
+  NonFnProps,
+  Serializer,
+  ServerFn,
+  ServerFnImpl,
+  ServerFnMethods,
+  ServerFnOpts,
+} from '../types'
 
 export const XBlingStatusCodeHeader = 'x-bling-status-code'
 export const XBlingLocationHeader = 'x-bling-location'
@@ -144,6 +153,14 @@ export function mergeHeaders(...objs: (Headers | HeadersInit | undefined)[]) {
   return new Headers(allHeaders)
 }
 
+export function mergeRequestInits(...objs: (RequestInit | undefined)[]) {
+  return Object.assign.call(null, [
+    {},
+    ...objs,
+    { headers: mergeHeaders(...objs.map((o) => o && o.headers)) },
+  ])
+}
+
 export async function parseResponse(response: Response) {
   if (response instanceof Response) {
     const contentType =
@@ -184,8 +201,66 @@ export async function parseResponse(response: Response) {
   return response
 }
 
-// export function json<TData>(data: TData, responseInit: ResponseInit = {}) {
-//   responseInit.headers = new Headers(responseInit.headers)
-//   responseInit.headers.set(XBlingContentTypeHeader, 'json')
-//   return new Response(JSON.stringify(data), responseInit) as JsonResponse<TData>
-// }
+export function mergeServerOpts(...objs: (ServerFnOpts | undefined)[]) {
+  return Object.assign.call(null, [
+    {},
+    ...objs,
+    {
+      request: mergeRequestInits(...objs.map((o) => o && o.request)),
+    },
+  ])
+}
+
+export function payloadRequestInit(
+  payload: any,
+  serializers: false | Serializer[]
+) {
+  let payloadInit: RequestInit = {}
+
+  if (payload instanceof FormData) {
+    payloadInit.body = payload
+  } else {
+    payloadInit.body = JSON.stringify(
+      payload,
+      serializers
+        ? (key, value) => {
+            let serializer = serializers.find(({ apply }) => apply(value))
+            if (serializer) {
+              return serializer.serialize(value)
+            }
+            return value
+          }
+        : undefined
+    )
+
+    payloadInit.headers = {
+      [ContentTypeHeader]: JSONResponseType,
+    }
+  }
+
+  return payloadInit
+}
+
+export function createFetcher<T extends AnyServerFn>(
+  route: string,
+  fetcherImpl: ServerFnImpl<T>
+): ServerFn<T> {
+  return Object.assign(fetcherImpl, {
+    url: route,
+    fetch: (request: RequestInit, opts: ServerFnOpts) => {
+      return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
+    },
+    query: (payload: any, opts: ServerFnOpts) => {
+      return fetcherImpl(
+        payload,
+        mergeServerOpts({ request: { method: 'GET' } }, opts)
+      )
+    },
+    mutate: (payload: any, opts: ServerFnOpts) => {
+      return fetcherImpl(
+        payload,
+        mergeServerOpts({ request: { method: 'POST' } }, opts)
+      )
+    },
+  } as ServerFnMethods<T>) as ServerFn<T>
+}
