@@ -2,9 +2,9 @@ import {
   AnyServerFn,
   JsonResponse,
   Serializer,
-  ServerFn,
-  ServerFnImpl,
-  ServerFnMethods,
+  Fetcher,
+  FetcherFn,
+  FetcherMethods,
   ServerFnOpts,
 } from '../types'
 
@@ -214,12 +214,12 @@ export function payloadRequestInit(
   payload: any,
   serializers: false | Serializer[]
 ) {
-  let payloadInit: RequestInit = {}
+  let req: RequestInit = {}
 
   if (payload instanceof FormData) {
-    payloadInit.body = payload
+    req.body = payload
   } else {
-    payloadInit.body = JSON.stringify(
+    req.body = JSON.stringify(
       payload,
       serializers
         ? (key, value) => {
@@ -232,22 +232,24 @@ export function payloadRequestInit(
         : undefined
     )
 
-    payloadInit.headers = {
+    req.headers = {
       [ContentTypeHeader]: JSONResponseType,
     }
   }
 
-  return payloadInit
+  return req
 }
 
 export function createFetcher<T extends AnyServerFn>(
   route: string,
-  fetcherImpl: ServerFnImpl<T>
-): ServerFn<T> {
-  return Object.assign(fetcherImpl, {
+  fetcherImpl: FetcherFn<T>
+): Fetcher<T> {
+  const fetcherMethods: FetcherMethods<T> = {
     url: route,
-    fetch: (request: RequestInit, opts: ServerFnOpts) => {
+    fetch: (request: RequestInit, opts?: ServerFnOpts) => {
       return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
     },
-  } as ServerFnMethods<T>) as ServerFn<T>
+  }
+
+  return Object.assign(fetcherImpl, fetcherMethods) as Fetcher<T>
 }

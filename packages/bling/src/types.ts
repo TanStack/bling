@@ -19,12 +19,17 @@ export type ServerFnReturn<T extends AnyServerFn> = Awaited<
   ? R
   : ReturnType<T>
 
-export type ServerFnImpl<T extends AnyServerFn> = (
+export type CreateFetcherFn = <T extends AnyServerFn>(
+  fn: T,
+  opts?: ServerFnOpts
+) => Fetcher<T>
+
+export type FetcherFn<T extends AnyServerFn> = (
   payload: Parameters<T>['0'],
   opts?: ServerFnOpts
 ) => Promise<Awaited<ServerFnReturn<T>>>
 
-export type ServerFnMethods<T extends AnyServerFn> = {
+export type FetcherMethods<T extends AnyServerFn> = {
   url: string
   fetch: (
     init: RequestInit,
@@ -32,12 +37,12 @@ export type ServerFnMethods<T extends AnyServerFn> = {
   ) => Promise<Awaited<ServerFnReturn<T>>>
 }
 
-export type ServerFn<T extends AnyServerFn> = ServerFnImpl<T> &
-  ServerFnMethods<T>
+export type Fetcher<T extends AnyServerFn> = FetcherFn<T> & FetcherMethods<T>
 
 export interface JsonResponse<TData> extends Response {}
 
 export type ServerFnOpts = {
+  method?: 'POST' | 'GET'
   request?: RequestInit
 }
 

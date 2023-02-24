@@ -16,9 +16,11 @@ import type {
   AnyServerFn,
   Deserializer,
   ServerFnOpts,
-  ServerFn,
+  Fetcher,
   ServerFnCtx,
+  CreateFetcherFn,
 } from './types'
+import { ClientServerFn } from './client'
 
 export * from './utils/utils'
 
@@ -28,99 +30,98 @@ export function addDeserializer(deserializer: Deserializer) {
   deserializers.push(deserializer)
 }
 
-type ServerServerFnMethods = {
+export type ServerFetcherMethods = {
   createHandler(
     fn: AnyServerFn,
     route: string,
     opts: ServerFnOpts
-  ): ServerFn<any>
+  ): Fetcher<any>
 }
 
-type ServerServerFnImpl = <T extends AnyServerFn>(
-  fn: T,
-  opts?: ServerFnOpts
-) => ServerFn<T>
-
-export type ServerServerFn = ServerServerFnImpl & ServerServerFnMethods
+export type ServerFn = CreateFetcherFn & ServerFetcherMethods
 
 const serverImpl = (() => {
   throw new Error('Should be compiled away')
 }) as any
 
-const serverMethods: ServerServerFnMethods = {
+const serverMethods: ServerFetcherMethods = {
   createHandler: (
     fn: AnyServerFn,
-    route: string,
+    pathname: string,
     defaultOpts?: ServerFnOpts
-  ): ServerFn<any> => {
-    return createFetcher(route, async (payload: any, opts?: ServerFnOpts) => {
-      console.log(`Executing server function: ${route}`)
-      if (payload) console.log(`  Fn Payload: ${payload}`)
+  ): Fetcher<any> => {
+    return createFetcher(
+      pathname,
+      async (payload: any, opts?: ServerFnOpts) => {
+        console.log(`Executing server function: ${pathname}`)
+        if (payload) console.log(`  Fn Payload: ${payload}`)
 
-      let payloadInit = payloadRequestInit(payload, false)
+        let payloadInit = payloadRequestInit(payload, false)
 
-      // Even though we're not crossing the network, we still need to
-      // create a Request object to pass to the server function
-      const request = new Request(
-        route,
-        mergeRequestInits(
-          {
-            method: 'POST',
-            headers: {
-              [XBlingOrigin]: 'server',
+        // Even though we're not crossing the network, we still need to
+        // create a Request object to pass to the server function
+        const request = new Request(
+          pathname,
+          mergeRequestInits(
+            {
+              method: 'POST',
+              headers: {
+                [XBlingOrigin]: 'server',
+              },
             },
-          },
-          payloadInit,
-          defaultOpts?.request,
-          opts?.request
-        )
-      )
-
-      try {
-        // Do the same parsing of the result as we do on the client
-        return parseResponse(
-          await fn(payload, {
-            request: request,
-          })
-        )
-      } catch (e) {
-        if (e instanceof Error && /[A-Za-z]+ is not defined/.test(e.message)) {
-          const error = new Error(
-            e.message +
-              '\n' +
-              ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
+            payloadInit,
+            defaultOpts?.request,
+            opts?.request
           )
-          error.stack = e.stack ?? ''
-          throw error
+        )
+
+        try {
+          // Do the same parsing of the result as we do on the client
+          return parseResponse(
+            await fn(payload, {
+              request: request,
+            })
+          )
+        } catch (e) {
+          if (
+            e instanceof Error &&
+            /[A-Za-z]+ is not defined/.test(e.message)
+          ) {
+            const error = new Error(
+              e.message +
+                '\n' +
+                ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
+            )
+            error.stack = e.stack ?? ''
+            throw error
+          }
+          throw e
         }
-        throw e
       }
-    })
+    )
   },
-  // used to fetch from an API route on the server or client, without falling into
-  // fetch problems on the server
-  // fetch: async function (route: string | URL, init: RequestInit) {
-  //   if (route instanceof URL || route.startsWith('http')) {
-  //     return await fetch(route, init)
-  //   }
-  //   const request = new Request(new URL(route, window.location.href).href, init)
-  //   return await fetch(request)
-  // },
 }
 
-export const server$: ServerServerFn = Object.assign(serverImpl, serverMethods)
+export const server$: ServerFn = Object.assign(serverImpl, serverMethods)
 
 async function parseRequest(event: ServerFnCtx) {
   let request = event.request
   let contentType = request.headers.get(ContentTypeHeader)
   let name = new URL(request.url).pathname,
-    args = []
+    payload
 
-  if (contentType) {
+  // Get request have their payload in the query string
+  if (request.method.toLowerCase() === 'get') {
+    let url = new URL(request.url)
+    let params = new URLSearchParams(url.search)
+    let payloadStr = decodeURIComponent(params.get('payload') ?? '')
+    payload = JSON.parse(payloadStr)
+  } else if (contentType) {
+    // Post requests have their payload in the body
     if (contentType === JSONResponseType) {
       let text = await request.text()
       try {
-        args = JSON.parse(text, (key: string, value: any) => {
+        payload = JSON.parse(text, (key: string, value: any) => {
           if (!value) {
             return value
           }
@@ -136,10 +137,11 @@ async function parseRequest(event: ServerFnCtx) {
       }
     } else if (contentType.includes('form')) {
       let formData = await request.clone().formData()
-      args = [formData, event]
+      payload = formData
     }
   }
-  return [name, args]
+
+  return [name, payload]
 }
 
 function respondWith(
@@ -226,12 +228,12 @@ function respondWith(
   })
 }
 
-export async function handleEvent(event: ServerFnCtx) {
-  const url = new URL(event.request.url)
+export async function handleEvent(ctx: ServerFnCtx) {
+  const url = new URL(ctx.request.url)
 
   if (hasHandler(url.pathname)) {
     try {
-      let [name, args] = await parseRequest(event)
+      let [name, payload] = await parseRequest(ctx)
       let handler = getHandler(name)
       if (!handler) {
         throw {
@@ -239,32 +241,29 @@ export async function handleEvent(event: ServerFnCtx) {
           message: 'Handler Not Found for ' + name,
         }
       }
-      const data = await handler.call(
-        event,
-        ...(Array.isArray(args) ? args : [args])
-      )
-      return respondWith(event, data, 'return')
+      const data = await handler(payload, ctx)
+      return respondWith(ctx, data, 'return')
     } catch (error) {
-      return respondWith(event, error as Error, 'throw')
+      return respondWith(ctx, error as Error, 'throw')
     }
   }
 
   return null
 }
 
-const handlers = new Map()
+const handlers = new Map<string, Fetcher<any>>()
 
-export function registerHandler(route: string, handler: any): any {
-  console.log('Registering handler', route)
-  handlers.set(route, handler)
+export function registerHandler(pathname: string, handler: Fetcher<any>): any {
+  console.log('Registering handler', pathname)
+  handlers.set(pathname, handler)
 }
 
-export function getHandler(route: string) {
-  return handlers.get(route)
+export function getHandler(pathname: string) {
+  return handlers.get(pathname)
 }
 
-export function hasHandler(route: string) {
-  return handlers.has(route)
+export function hasHandler(pathname: string) {
+  return handlers.has(pathname)
 }
 
 // used to fetch from an API route on the server or client, without falling into

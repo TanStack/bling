@@ -183,7 +183,7 @@ function transformServer({ types: t, template }) {
                       )
                   }
 
-                  const route = nodePath
+                  const pathname = nodePath
                     .join(
                       INLINE_SERVER_ROUTE_PREFIX,
                       hash,
@@ -197,8 +197,8 @@ function transformServer({ types: t, template }) {
                   if (state.opts.ssr) {
                     statement.insertBefore(
                       template(`
-                      const $$server_module${serverIndex} = server$.createHandler(%%source%%, "${route}", %%options%%);
-                      server$.registerHandler("${route}", $$server_module${serverIndex});
+                      const $$server_module${serverIndex} = server$.createHandler(%%source%%, "${pathname}", %%options%%);
+                      server$.registerHandler("${pathname}", $$server_module${serverIndex});
                       `)({
                         source: serverFn.node,
                         options: serverFnOpts.node,
@@ -210,10 +210,10 @@ function transformServer({ types: t, template }) {
                         `
                         ${
                           process.env.TEST_ENV === 'client'
-                            ? `server$.registerHandler("${route}", server$.createHandler(%%source%%, "${route}", %%options%%));`
+                            ? `server$.registerHandler("${pathname}", server$.createHandler(%%source%%, "${pathname}", %%options%%));`
                             : ``
                         }
-                        const $$server_module${serverIndex} = server$.createFetcher("${route}", %%options%%);`,
+                        const $$server_module${serverIndex} = server$.createFetcher("${pathname}", %%options%%);`,
                         {
                           syntacticPlaceholders: true,
                         }
