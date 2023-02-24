@@ -114,8 +114,11 @@ async function parseRequest(event: ServerFnCtx) {
   if (request.method.toLowerCase() === 'get') {
     let url = new URL(request.url)
     let params = new URLSearchParams(url.search)
-    let payloadStr = decodeURIComponent(params.get('payload') ?? '')
-    payload = JSON.parse(payloadStr)
+    const payloadSearchStr = params.get('payload')
+    if (payloadSearchStr) {
+      let payloadStr = decodeURIComponent(params.get('payload') ?? '')
+      payload = JSON.parse(payloadStr)
+    }
   } else if (contentType) {
     // Post requests have their payload in the body
     if (contentType === JSONResponseType) {
