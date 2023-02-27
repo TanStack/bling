@@ -36,6 +36,8 @@ export function json<TData>(
     headers.set(ContentTypeHeader, 'application/json; charset=utf-8')
   }
 
+  headers.set(XBlingContentTypeHeader, 'json')
+
   const response = new Response(JSON.stringify(data), {
     ...responseInit,
     headers,

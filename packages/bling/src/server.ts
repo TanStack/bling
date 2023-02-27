@@ -54,7 +54,6 @@ const serverMethods: ServerFetcherMethods = {
   ): Fetcher<any> => {
     return createFetcher(pathname, async (payload: any, opts?: ServerFnCtx) => {
       const method = opts?.method || defaultOpts?.method || 'POST'
-      const ssr = !opts?.request
 
       console.log(`Executing server function: ${method}  ${pathname}`)
       if (payload) console.log(`  Fn Payload: ${payload}`)
@@ -136,7 +135,7 @@ export async function handleEvent(ctx: ServerFnCtxWithRequest) {
           message: 'Handler Not Found for ' + pathname,
         }
       }
-      const data = await handler(payload, ctx)
+      const data = await handler(payload, { ...ctx, __hasRequest: true })
       return respondWith(ctx, data, 'return')
     } catch (error) {
       return respondWith(ctx, error as Error, 'throw')
@@ -219,7 +218,9 @@ function respondWith(
     let headers = new Headers(data.headers)
     headers.set(XBlingOrigin, 'server')
     headers.set(XBlingResponseTypeHeader, responseType)
-    headers.set(XBlingContentTypeHeader, 'response')
+    if (!headers.has(XBlingContentTypeHeader)) {
+      headers.set(XBlingContentTypeHeader, 'response')
+    }
 
     return new Response(data.body, {
       status: data.status,
