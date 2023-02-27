@@ -12,7 +12,7 @@ The `server$` function is used to create a server-side RPC. It takes a function 
 **🧠 Important Notes**:
 
 - The server-side function must be an `async` function.
-- RPC's default to `POST` requests. To use `GET` requests, use the `fn.get` convenience method or alter the request manually to your liking.
+- RPC's default to `POST` requests and pass payloads as request the request body. To use `GET` requests and search-param payloads instead, the `opts.method` can be set to `GET`. This will automatically configure both the method and the payload serialization to work via search params instead of a request body. You can also alter the actual request (and request body) manually to your liking.
 
 ```tsx
 import { server$ } from '@tanstack/bling'
