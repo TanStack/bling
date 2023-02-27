@@ -5,7 +5,8 @@ import {
   Fetcher,
   FetcherFn,
   FetcherMethods,
-  ServerFnOpts,
+  ServerFnCtx,
+  ServerFnCtxOptions,
 } from '../types'
 
 export const XBlingStatusCodeHeader = 'x-bling-status-code'
@@ -200,7 +201,7 @@ export async function parseResponse(response: Response) {
   return response
 }
 
-export function mergeServerOpts(...objs: (ServerFnOpts | undefined)[]) {
+export function mergeServerOpts(...objs: (ServerFnCtxOptions | undefined)[]) {
   return Object.assign.call(null, [
     {},
     ...objs,
@@ -246,10 +247,26 @@ export function createFetcher<T extends AnyServerFn>(
 ): Fetcher<T> {
   const fetcherMethods: FetcherMethods<T> = {
     url: route,
-    fetch: (request: RequestInit, opts?: ServerFnOpts) => {
-      return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
+    fetch: (request: RequestInit, ctx?: ServerFnCtxOptions) => {
+      return fetcherImpl(undefined, mergeServerOpts({ request }, ctx))
     },
   }
 
   return Object.assign(fetcherImpl, fetcherMethods) as Fetcher<T>
+}
+
+export function resolveRequestHref(
+  pathname: string,
+  method: 'GET' | 'POST',
+  payloadInit: RequestInit
+) {
+  const resolved =
+    method.toLowerCase() === 'get'
+      ? `${pathname}?payload=${encodeURIComponent(payloadInit.body as string)}`
+      : pathname
+
+  return new URL(
+    resolved,
+    typeof document !== 'undefined' ? window.location.href : `http://localhost`
+  ).href
 }

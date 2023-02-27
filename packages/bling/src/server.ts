@@ -11,16 +11,17 @@ import {
   mergeRequestInits,
   parseResponse,
   payloadRequestInit,
+  resolveRequestHref,
 } from './utils/utils'
 import type {
   AnyServerFn,
   Deserializer,
-  ServerFnOpts,
   Fetcher,
   ServerFnCtx,
   CreateFetcherFn,
+  ServerFnCtxOptions,
+  ServerFnCtxWithRequest,
 } from './types'
-import { ClientServerFn } from './client'
 
 export * from './utils/utils'
 
@@ -33,9 +34,10 @@ export function addDeserializer(deserializer: Deserializer) {
 export type ServerFetcherMethods = {
   createHandler(
     fn: AnyServerFn,
-    route: string,
-    opts: ServerFnOpts
+    pathame: string,
+    opts: ServerFnCtxOptions
   ): Fetcher<any>
+  registerHandler(pathname: string, handler: Fetcher<any>): void
 }
 
 export type ServerFn = CreateFetcherFn & ServerFetcherMethods
@@ -48,20 +50,27 @@ const serverMethods: ServerFetcherMethods = {
   createHandler: (
     fn: AnyServerFn,
     pathname: string,
-    defaultOpts?: ServerFnOpts
+    defaultOpts?: ServerFnCtxOptions
   ): Fetcher<any> => {
-    return createFetcher(
-      pathname,
-      async (payload: any, opts?: ServerFnOpts) => {
-        console.log(`Executing server function: ${pathname}`)
-        if (payload) console.log(`  Fn Payload: ${payload}`)
+    return createFetcher(pathname, async (payload: any, opts?: ServerFnCtx) => {
+      const method = opts?.method || defaultOpts?.method || 'POST'
+      const ssr = !opts?.request
+
+      console.log(`Executing server function: ${method}  ${pathname}`)
+      if (payload) console.log(`  Fn Payload: ${payload}`)
+
+      opts = opts ?? {}
+
+      if (!opts.__hasRequest) {
+        // This will happen if the server function is called directly during SSR
+        // Even though we're not crossing the network, we still need to
+        // create a Request object to pass to the server function as if it was
 
         let payloadInit = payloadRequestInit(payload, false)
 
-        // Even though we're not crossing the network, we still need to
-        // create a Request object to pass to the server function
-        const request = new Request(
-          pathname,
+        const resolvedHref = resolveRequestHref(pathname, method, payloadInit)
+        opts.request = new Request(
+          resolvedHref,
           mergeRequestInits(
             {
               method: 'POST',
@@ -74,40 +83,73 @@ const serverMethods: ServerFetcherMethods = {
             opts?.request
           )
         )
-
-        try {
-          // Do the same parsing of the result as we do on the client
-          return parseResponse(
-            await fn(payload, {
-              request: request,
-            })
-          )
-        } catch (e) {
-          if (
-            e instanceof Error &&
-            /[A-Za-z]+ is not defined/.test(e.message)
-          ) {
-            const error = new Error(
-              e.message +
-                '\n' +
-                ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
-            )
-            error.stack = e.stack ?? ''
-            throw error
-          }
-          throw e
-        }
       }
-    )
+
+      try {
+        // Do the same parsing of the result as we do on the client
+        const response = await fn(payload, opts)
+
+        if (!opts.__hasRequest) {
+          // If we're on the server during SSR, we can skip to
+          // parsing the response directly
+          return parseResponse(response)
+        }
+
+        // Otherwise, the client-side code will parse the response properly
+        return response
+      } catch (e) {
+        if (e instanceof Error && /[A-Za-z]+ is not defined/.test(e.message)) {
+          const error = new Error(
+            e.message +
+              '\n' +
+              ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
+          )
+          error.stack = e.stack ?? ''
+          throw error
+        }
+        throw e
+      }
+    })
+  },
+  registerHandler(pathname: string, handler: Fetcher<any>): any {
+    console.log('Registering handler', pathname)
+    handlers.set(pathname, handler)
   },
 }
 
 export const server$: ServerFn = Object.assign(serverImpl, serverMethods)
 
-async function parseRequest(event: ServerFnCtx) {
+export async function handleEvent(ctx: ServerFnCtxWithRequest) {
+  if (!ctx.request) {
+    throw new Error('handleEvent must be called with a request.')
+  }
+
+  const url = new URL(ctx.request.url)
+
+  if (hasHandler(url.pathname)) {
+    try {
+      let [pathname, payload] = await parseRequest(ctx)
+      let handler = getHandler(pathname)
+      if (!handler) {
+        throw {
+          status: 404,
+          message: 'Handler Not Found for ' + pathname,
+        }
+      }
+      const data = await handler(payload, ctx)
+      return respondWith(ctx, data, 'return')
+    } catch (error) {
+      return respondWith(ctx, error as Error, 'throw')
+    }
+  }
+
+  return null
+}
+
+async function parseRequest(event: ServerFnCtxWithRequest) {
   let request = event.request
   let contentType = request.headers.get(ContentTypeHeader)
-  let name = new URL(request.url).pathname,
+  let pathname = new URL(request.url).pathname,
     payload
 
   // Get request have their payload in the query string
@@ -144,18 +186,18 @@ async function parseRequest(event: ServerFnCtx) {
     }
   }
 
-  return [name, payload]
+  return [pathname, payload]
 }
 
 function respondWith(
-  { request }: ServerFnCtx,
+  ctx: ServerFnCtxWithRequest,
   data: Response | Error | string | object,
   responseType: 'throw' | 'return'
 ) {
   if (data instanceof Response) {
     if (
       isRedirectResponse(data) &&
-      request.headers.get(XBlingOrigin) === 'client'
+      ctx.request.headers.get(XBlingOrigin) === 'client'
     ) {
       let headers = new Headers(data.headers)
       headers.set(XBlingOrigin, 'server')
@@ -231,35 +273,7 @@ function respondWith(
   })
 }
 
-export async function handleEvent(ctx: ServerFnCtx) {
-  const url = new URL(ctx.request.url)
-
-  if (hasHandler(url.pathname)) {
-    try {
-      let [name, payload] = await parseRequest(ctx)
-      let handler = getHandler(name)
-      if (!handler) {
-        throw {
-          status: 404,
-          message: 'Handler Not Found for ' + name,
-        }
-      }
-      const data = await handler(payload, ctx)
-      return respondWith(ctx, data, 'return')
-    } catch (error) {
-      return respondWith(ctx, error as Error, 'throw')
-    }
-  }
-
-  return null
-}
-
 const handlers = new Map<string, Fetcher<any>>()
-
-export function registerHandler(pathname: string, handler: Fetcher<any>): any {
-  console.log('Registering handler', pathname)
-  handlers.set(pathname, handler)
-}
 
 export function getHandler(pathname: string) {
   return handlers.get(pathname)

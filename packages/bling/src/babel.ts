@@ -201,7 +201,8 @@ function transformServer({ types: t, template }) {
                       server$.registerHandler("${pathname}", $$server_module${serverIndex});
                       `)({
                         source: serverFn.node,
-                        options: serverFnOpts.node,
+                        options:
+                          serverFnOpts?.node || t.identifier('undefined'),
                       })
                     )
                   } else {
@@ -221,9 +222,13 @@ function transformServer({ types: t, template }) {
                         process.env.TEST_ENV === 'client'
                           ? {
                               source: serverFn.node,
-                              options: serverFnOpts.node,
+                              options:
+                                serverFnOpts?.node || t.identifier('undefined'),
                             }
-                          : {}
+                          : {
+                              options:
+                                serverFnOpts?.node || t.identifier('undefined'),
+                            }
                       )
                     )
                   }

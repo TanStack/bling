@@ -1,8 +1,9 @@
 import {
-  createFetcher,
   mergeRequestInits,
+  mergeServerOpts,
   parseResponse,
   payloadRequestInit,
+  resolveRequestHref,
   XBlingOrigin,
   XBlingResponseTypeHeader,
 } from './utils/utils'
@@ -10,9 +11,11 @@ import {
 import type {
   AnyServerFn,
   Serializer,
-  ServerFnOpts,
-  Fetcher,
-  CreateFetcherFn,
+  FetcherFn,
+  FetcherMethods,
+  ServerFnReturn,
+  ServerFnCtxOptions,
+  ServerFnCtx,
 } from './types'
 
 export * from './utils/utils'
@@ -25,58 +28,78 @@ export function addSerializer({ apply, serialize }: Serializer) {
   serializers.push({ apply, serialize })
 }
 
-export type ClientFetcherMethods = {
-  createFetcher(route: string, defualtOpts: ServerFnOpts): Fetcher<any>
+export type CreateClientFetcherFn = <T extends AnyServerFn>(
+  fn: T,
+  opts?: ServerFnCtxOptions
+) => ClientFetcher<T>
+
+export type CreateClientFetcherMethods = {
+  createFetcher(
+    route: string,
+    defualtOpts: ServerFnCtxOptions
+  ): ClientFetcher<any>
 }
 
-export type ClientServerFn = CreateFetcherFn & ClientFetcherMethods
+export type ClientFetcher<T extends AnyServerFn> = FetcherFn<T> &
+  FetcherMethods<T>
+
+export type ClientFetcherMethods<T extends AnyServerFn> = FetcherMethods<T> & {
+  fetch: (
+    init: RequestInit,
+    opts?: ServerFnCtxOptions
+  ) => Promise<Awaited<ServerFnReturn<T>>>
+}
+
+export type ClientServerFn = CreateClientFetcherFn & CreateClientFetcherMethods
 
 const serverImpl = (() => {
   throw new Error('Should be compiled away')
 }) as any
 
-const serverMethods: ClientFetcherMethods = {
-  createFetcher: (pathname: string, defaultOpts?: ServerFnOpts) => {
-    return createFetcher(
-      pathname,
-      async (payload: any, opts?: ServerFnOpts) => {
-        const method = opts?.method || defaultOpts?.method || 'POST'
-        const baseInit: RequestInit = {
-          method,
-          headers: {
-            [XBlingOrigin]: 'client',
-          },
-        }
+const serverMethods: CreateClientFetcherMethods = {
+  createFetcher: (pathname: string, defaultOpts?: ServerFnCtxOptions) => {
+    const fetcherImpl = async (payload: any, opts?: ServerFnCtxOptions) => {
+      const method = opts?.method || defaultOpts?.method || 'POST'
 
-        let payloadInit = payloadRequestInit(payload, serializers)
-
-        const resolvedRoute =
-          method === 'GET'
-            ? payloadInit.body === 'string'
-              ? `${pathname}?payload=${encodeURIComponent(payloadInit.body)}`
-              : pathname
-            : pathname
-
-        const request = new Request(
-          new URL(resolvedRoute, window.location.href).href,
-          mergeRequestInits(
-            baseInit,
-            payloadInit,
-            defaultOpts?.request,
-            opts?.request
-          )
-        )
-
-        const response = await fetch(request)
-
-        // // throws response, error, form error, json object, string
-        if (response.headers.get(XBlingResponseTypeHeader) === 'throw') {
-          throw await parseResponse(response)
-        } else {
-          return await parseResponse(response)
-        }
+      const baseInit: RequestInit = {
+        method,
+        headers: {
+          [XBlingOrigin]: 'client',
+        },
       }
-    )
+
+      let payloadInit = payloadRequestInit(payload, serializers)
+
+      const resolvedHref = resolveRequestHref(pathname, method, payloadInit)
+
+      const request = new Request(
+        resolvedHref,
+        mergeRequestInits(
+          baseInit,
+          payloadInit,
+          defaultOpts?.request,
+          opts?.request
+        )
+      )
+
+      const response = await fetch(request)
+
+      // // throws response, error, form error, json object, string
+      if (response.headers.get(XBlingResponseTypeHeader) === 'throw') {
+        throw await parseResponse(response)
+      } else {
+        return await parseResponse(response)
+      }
+    }
+
+    const fetcherMethods: ClientFetcherMethods<any> = {
+      url: pathname,
+      fetch: (request: RequestInit, opts?: ServerFnCtxOptions) => {
+        return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
+      },
+    }
+
+    return Object.assign(fetcherImpl, fetcherMethods) as ClientFetcher<any>
   },
 }
 

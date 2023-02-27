@@ -21,19 +21,19 @@ export type ServerFnReturn<T extends AnyServerFn> = Awaited<
 
 export type CreateFetcherFn = <T extends AnyServerFn>(
   fn: T,
-  opts?: ServerFnOpts
+  opts?: ServerFnCtx
 ) => Fetcher<T>
 
 export type FetcherFn<T extends AnyServerFn> = (
   payload: Parameters<T>['0'],
-  opts?: ServerFnOpts
+  opts?: ServerFnCtx
 ) => Promise<Awaited<ServerFnReturn<T>>>
 
 export type FetcherMethods<T extends AnyServerFn> = {
   url: string
   fetch: (
     init: RequestInit,
-    opts?: ServerFnOpts
+    opts?: ServerFnCtxOptions
   ) => Promise<Awaited<ServerFnReturn<T>>>
 }
 
@@ -41,14 +41,21 @@ export type Fetcher<T extends AnyServerFn> = FetcherFn<T> & FetcherMethods<T>
 
 export interface JsonResponse<TData> extends Response {}
 
-export type ServerFnOpts = {
-  method?: 'POST' | 'GET'
-  request?: RequestInit
+export type ServerFnCtxBase = {
+  method?: 'GET' | 'POST'
 }
 
-export type ServerFnCtx = {
-  request: Request
+export type ServerFnCtxOptions = ServerFnCtxBase & {
+  request?: RequestInit
+  __hasRequest?: never
 }
+
+export type ServerFnCtxWithRequest = ServerFnCtxBase & {
+  request: Request
+  __hasRequest: true
+}
+
+export type ServerFnCtx = ServerFnCtxOptions | ServerFnCtxWithRequest
 
 export type NonFnProps<T> = {
   [TKey in keyof T]: TKey extends (...args: any[]) => any ? never : T[TKey]
