@@ -3,7 +3,7 @@
   "repository": "https://github.com/tanstack/bling.git",
   "scripts": {
     "build": "ts-node scripts/build.ts",
-    "dev": "pnpm -rc --parallel exec 'pnpm dev'",
+    "dev": "pnpm -rc --filter \"./packages/**\" --parallel exec 'pnpm dev'",
     "test": "exit 0",
     "test:dev": "exit 0",
     "test:ci": "exit 0",

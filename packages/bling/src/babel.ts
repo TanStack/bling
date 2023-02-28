@@ -6,60 +6,77 @@
 
 import crypto from 'crypto'
 import nodePath from 'path'
+import * as esbuild from 'esbuild'
 
 const INLINE_SERVER_ROUTE_PREFIX = '/_m'
 
-function transformServer({ types: t, template }) {
-  function getIdentifier(path) {
-    const parentPath = path.parentPath
-    if (parentPath.type === 'VariableDeclarator') {
-      const pp = parentPath
-      const name = pp.get('id')
-      return name.node.type === 'Identifier' ? name : null
+export function compileServerFile$({ code }) {
+  let compiled = esbuild.buildSync({
+    stdin: {
+      contents: code,
+    },
+    write: false,
+    metafile: true,
+    platform: 'neutral',
+    format: 'esm',
+    // loader: {
+    //   '.js': 'jsx',
+    // },
+    logLevel: 'silent',
+  })
+
+  let exps
+
+  for (let key in compiled.metafile.outputs) {
+    if (compiled.metafile.outputs[key].entryPoint) {
+      exps = compiled.metafile.outputs[key].exports
     }
-    if (parentPath.type === 'AssignmentExpression') {
-      const pp = parentPath
-      const name = pp.get('left')
-      return name.node.type === 'Identifier' ? name : null
-    }
-    if (path.node.type === 'ArrowFunctionExpression') {
-      return null
-    }
-    return path.node.id && path.node.id.type === 'Identifier'
-      ? path.get('id')
-      : null
-  }
-  function isIdentifierReferenced(ident) {
-    const b = ident.scope.getBinding(ident.node.name)
-    if (b && b.referenced) {
-      if (b.path.type === 'FunctionDeclaration') {
-        return !b.constantViolations
-          .concat(b.referencePaths)
-          .every((ref) => ref.findParent((p) => p === b.path))
-      }
-      return true
-    }
-    return false
-  }
-  function markFunction(path, state) {
-    const ident = getIdentifier(path)
-    if (ident && ident.node && isIdentifierReferenced(ident)) {
-      state.refs.add(ident)
-    }
-  }
-  function markImport(path, state) {
-    const local = path.get('local')
-    // if (isIdentifierReferenced(local)) {
-    state.refs.add(local)
-    // }
   }
 
-  function hashFn(str) {
-    return crypto
-      .createHash('shake256', { outputLength: 5 /* bytes = 10 hex digits*/ })
-      .update(str)
-      .digest('hex')
+  if (!exps) {
+    throw new Error('Could not find entry point to detect exports')
   }
+
+  console.log(exps)
+
+  compiled = esbuild.buildSync({
+    stdin: {
+      contents: `${exps
+        .map((key) => `export const ${key} = undefined`)
+        .join('\n')}`,
+    },
+    write: false,
+    platform: 'neutral',
+    format: 'esm',
+  })
+
+  console.log(compiled.outputFiles[0].text)
+
+  return {
+    code: compiled.outputFiles[0].text,
+  }
+}
+
+export function compileServerFn$({ code, compiler, id, ssr }) {
+  const compiledCode = compiler(code, id, (source: any, id: any) => ({
+    plugins: [
+      [
+        transformServerFn$,
+        {
+          ssr,
+          root: process.cwd(),
+          minify: process.env.NODE_ENV === 'production',
+        },
+      ],
+    ].filter(Boolean),
+  }))
+
+  return {
+    code: compiledCode,
+  }
+}
+
+export function transformServerFn$({ types: t, template }) {
   return {
     visitor: {
       Program: {
@@ -366,4 +383,57 @@ function transformServer({ types: t, template }) {
     },
   }
 }
-export { transformServer as default }
+
+function getIdentifier(path) {
+  const parentPath = path.parentPath
+  if (parentPath.type === 'VariableDeclarator') {
+    const pp = parentPath
+    const name = pp.get('id')
+    return name.node.type === 'Identifier' ? name : null
+  }
+  if (parentPath.type === 'AssignmentExpression') {
+    const pp = parentPath
+    const name = pp.get('left')
+    return name.node.type === 'Identifier' ? name : null
+  }
+  if (path.node.type === 'ArrowFunctionExpression') {
+    return null
+  }
+  return path.node.id && path.node.id.type === 'Identifier'
+    ? path.get('id')
+    : null
+}
+
+function isIdentifierReferenced(ident) {
+  const b = ident.scope.getBinding(ident.node.name)
+  if (b && b.referenced) {
+    if (b.path.type === 'FunctionDeclaration') {
+      return !b.constantViolations
+        .concat(b.referencePaths)
+        .every((ref) => ref.findParent((p) => p === b.path))
+    }
+    return true
+  }
+  return false
+}
+
+function markFunction(path, state) {
+  const ident = getIdentifier(path)
+  if (ident && ident.node && isIdentifierReferenced(ident)) {
+    state.refs.add(ident)
+  }
+}
+
+function markImport(path, state) {
+  const local = path.get('local')
+  // if (isIdentifierReferenced(local)) {
+  state.refs.add(local)
+  // }
+}
+
+function hashFn(str) {
+  return crypto
+    .createHash('shake256', { outputLength: 5 /* bytes = 10 hex digits*/ })
+    .update(str)
+    .digest('hex')
+}

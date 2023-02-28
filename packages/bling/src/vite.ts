@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import babel from './babel'
+import { compileServerFile$, compileServerFn$ } from './babel'
 
 export function bling(opts?: { babel?: Options['babel'] }): Plugin {
   const options = opts ?? {}
@@ -16,25 +16,31 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
           ? void 0
           : transformOptions.ssr
 
+      let ssr = process.env.TEST_ENV === 'client' ? false : isSsr
+
       const url = pathToFileURL(id)
       url.searchParams.delete('v')
       id = fileURLToPath(url).replace(/\\/g, '/')
 
       const babelOptions =
-        (fn: any) =>
-        (...args: any[]) => {
+        (fn?: (source: any, id: any) => { plugins: any[] }) =>
+        (source: any, id: any) => {
           const b: any =
             typeof options.babel === 'function'
               ? // @ts-ignore
                 options.babel(...args)
               : options.babel ?? { plugins: [] }
-          const d = fn(...args)
+          const d = fn?.(source, id)
           return {
-            plugins: [...b.plugins, ...d.plugins],
+            plugins: [...b.plugins, ...(d?.plugins ?? [])],
           }
         }
 
-      let compiler = (code: string, id: string, fn: any) => {
+      let compiler = (
+        code: string,
+        id: string,
+        fn?: (source: any, id: any) => { plugins: any[] }
+      ) => {
         let plugin = viteReact({
           ...(options ?? {}),
           fastRefresh: false,
@@ -45,25 +51,23 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         return plugin[0].transform(code, id, transformOptions)
       }
 
-      let ssr = process.env.TEST_ENV === 'client' ? false : isSsr
+      if (url.pathname.includes('.server$.') && !ssr) {
+        const compiled = compileServerFile$({
+          code,
+        })
+
+        return compiled.code
+      }
 
       if (code.includes('serverFn$(')) {
-        return compiler(
+        const compiled = compileServerFn$({
           code,
-          id.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
-          (source: any, id: any) => ({
-            plugins: [
-              [
-                babel,
-                {
-                  ssr,
-                  root: process.cwd(),
-                  minify: process.env.NODE_ENV === 'production',
-                },
-              ],
-            ].filter(Boolean),
-          })
-        )
+          compiler,
+          ssr,
+          id: id.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
+        })
+
+        return compiled.code
       }
     },
   }
