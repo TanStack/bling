@@ -203,4 +203,26 @@ split$<T extends (...args: any[]) => Promise<any>>(fn: T): T
 
 - A code-split version of the original function.
 
+# Proposed APIs
+
+The following APIs are proposed for future versions of Bling. They are not yet implemented, but are being considered for future releases.
+
+## `worker$`
+
+The `worker$` function is used to create an isomorphic Web Worker and interact with it. On the server, the function will run in the same process as the server. On the client, the function will be compiled to a Web Worker and will return an interface similar to `serverFn$` to make it easy to call from the client
+
+> 🧠 Similar to `serverFn$`, data sent to and from workers will be serialized. This means that you can pass any JSON-serializable data to the worker, but you cannot pass functions or classes. If you need to use non-serializable assets in your worker, you can import them and use them directly in the worker function, however the instances of those assets will be unique to the worker thread.
+
+```tsx
+import { worker$ } from '@tanstack/bling'
+
+const sayHello = worker$(async (name: string) => {
+  // do something
+  return `Hello ${name}`
+})
+
+const result = sayHello('World!')
+console.log(result) // 'Hello World!'
+```
+
 <!-- Use the force, Luke! -->
