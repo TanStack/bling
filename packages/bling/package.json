@@ -1,6 +1,6 @@
 {
   "name": "@tanstack/bling",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "",
   "author": "Nikhil Saraf",
   "license": "MIT",
@@ -45,7 +45,7 @@
     }
   },
   "dependencies": {
-    "@tanstack/bling": "0.1.4",
+    "@tanstack/bling": "0.1.5",
     "@vitejs/plugin-react": "^3.1.0"
   },
   "devDependencies": {
