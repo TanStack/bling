@@ -10,8 +10,12 @@ export function App() {
       <body>
         <div>Hello world</div>
         <button onClick={() => sayHello()}>Click me</button>
-        <script type="module" src="/src/app/entry-client.tsx"></script>
+        <Scripts />
       </body>
     </html>
   );
+}
+
+function Scripts() {
+  return <script type="module" src="/src/app/entry-client.tsx"></script>;
 }
