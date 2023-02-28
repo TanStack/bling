@@ -1,7 +1,8 @@
 import { server$ } from "@tanstack/bling";
 
+const sayHello = server$(() => console.log("Hello world"));
+
 export function App() {
-  let sayHello = server$(() => console.log("Hello world"));
   return (
     <html>
       <head>
