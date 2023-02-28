@@ -1,6 +1,6 @@
-import { server$ } from "@tanstack/bling";
+import { serverFn$ } from '@tanstack/bling'
 
-const sayHello = server$(() => console.log("Hello world"));
+const sayHello = serverFn$(() => console.log('Hello world'))
 
 export function App() {
   return (
@@ -14,9 +14,9 @@ export function App() {
         <Scripts />
       </body>
     </html>
-  );
+  )
 }
 
 function Scripts() {
-  return <script type="module" src="/src/app/entry-client.tsx"></script>;
+  return <script type="module" src="/src/app/entry-client.tsx"></script>
 }

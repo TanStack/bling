@@ -116,7 +116,7 @@ const serverMethods: ServerFetcherMethods = {
   },
 }
 
-export const server$: ServerFn = Object.assign(serverImpl, serverMethods)
+export const serverFn$: ServerFn = Object.assign(serverImpl, serverMethods)
 
 export async function handleEvent(ctx: ServerFnCtxWithRequest) {
   if (!ctx.request) {
@@ -286,4 +286,4 @@ export function hasHandler(pathname: string) {
 
 // used to fetch from an API route on the server or client, without falling into
 // fetch problems on the server
-// server$.fetch = fetch
+// serverFn$.fetch = fetch

@@ -2,7 +2,7 @@
 
 // All credit for this work goes to the amazing Next.js team.
 // https://github.com/vercel/next.js/blob/canary/packages/next/build/babel/plugins/next-ssg-transform.ts
-// This is adapted to work with any server$() calls and transpile it into multiple api function for a file.
+// This is adapted to work with any serverFn$() calls and transpile it into multiple api function for a file.
 
 import crypto from 'crypto'
 import nodePath from 'path'
@@ -113,7 +113,7 @@ function transformServer({ types: t, template }) {
               CallExpression: (path) => {
                 if (
                   path.node.callee.type === 'Identifier' &&
-                  path.node.callee.name === 'server$'
+                  path.node.callee.name === 'serverFn$'
                 ) {
                   const serverFn = path.get('arguments')[0]
                   const serverFnOpts = path.get('arguments')[1]
@@ -140,7 +140,7 @@ function transformServer({ types: t, template }) {
                       let obj = path.get('object')
                       if (
                         obj.node.type === 'Identifier' &&
-                        obj.node.name === 'server$'
+                        obj.node.name === 'serverFn$'
                       ) {
                         obj.replaceWith(t.identifier('$$ctx'))
                         return
@@ -197,8 +197,8 @@ function transformServer({ types: t, template }) {
                   if (state.opts.ssr) {
                     statement.insertBefore(
                       template(`
-                      const $$server_module${serverIndex} = server$.createHandler(%%source%%, "${pathname}", %%options%%);
-                      server$.registerHandler("${pathname}", $$server_module${serverIndex});
+                      const $$server_module${serverIndex} = serverFn$.createHandler(%%source%%, "${pathname}", %%options%%);
+                      serverFn$.registerHandler("${pathname}", $$server_module${serverIndex});
                       `)({
                         source: serverFn.node,
                         options:
@@ -211,10 +211,10 @@ function transformServer({ types: t, template }) {
                         `
                         ${
                           process.env.TEST_ENV === 'client'
-                            ? `server$.registerHandler("${pathname}", server$.createHandler(%%source%%, "${pathname}", %%options%%));`
+                            ? `serverFn$.registerHandler("${pathname}", serverFn$.createHandler(%%source%%, "${pathname}", %%options%%));`
                             : ``
                         }
-                        const $$server_module${serverIndex} = server$.createFetcher("${pathname}", %%options%%);`,
+                        const $$server_module${serverIndex} = serverFn$.createFetcher("${pathname}", %%options%%);`,
                         {
                           syntacticPlaceholders: true,
                         }
@@ -242,7 +242,7 @@ function transformServer({ types: t, template }) {
               ArrowFunctionExpression: markFunction,
               ImportSpecifier: function (path, state) {
                 // Rewrite imports to `@tanstack/bling` to `@tanstack/bling/server` during SSR
-                if (state.opts.ssr && path.node.imported.name === 'server$') {
+                if (state.opts.ssr && path.node.imported.name === 'serverFn$') {
                   const importDeclaration = path.findParent((p) =>
                     p.isImportDeclaration()
                   )

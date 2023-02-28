@@ -103,4 +103,7 @@ const serverMethods: CreateClientFetcherMethods = {
   },
 }
 
-export const server$: ClientServerFn = Object.assign(serverImpl, serverMethods)
+export const serverFn$: ClientServerFn = Object.assign(
+  serverImpl,
+  serverMethods
+)

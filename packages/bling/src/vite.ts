@@ -47,7 +47,7 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
 
       let ssr = process.env.TEST_ENV === 'client' ? false : isSsr
 
-      if (code.includes('server$(')) {
+      if (code.includes('serverFn$(')) {
         return compiler(
           code,
           id.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
