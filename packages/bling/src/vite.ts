@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { compileServerFile$, compileServerFn$ } from './babel'
+import { compileServerFile$, compileServerFn$ } from './compilers'
 
 export function bling(opts?: { babel?: Options['babel'] }): Plugin {
   const options = opts ?? {}
