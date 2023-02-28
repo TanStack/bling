@@ -118,10 +118,14 @@ const serverMethods: ServerFetcherMethods = {
 
 export const serverFn$: ServerFn = Object.assign(serverImpl, serverMethods)
 
-export async function handleEvent(ctx: ServerFnCtxWithRequest) {
-  if (!ctx.request) {
+export async function handleEvent(
+  _ctx: Omit<ServerFnCtxWithRequest, '__hasRequest'>
+) {
+  if (!_ctx.request) {
     throw new Error('handleEvent must be called with a request.')
   }
+
+  const ctx: ServerFnCtxWithRequest = { ..._ctx, __hasRequest: true }
 
   const url = new URL(ctx.request.url)
 
