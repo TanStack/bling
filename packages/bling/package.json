@@ -12,19 +12,19 @@
     "*"
   ],
   "scripts": {
-    "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:server --watch\" \"pnpm build:vite --watch\" \"pnpm build:compiler --watch\" \"pnpm build:client --watch\"",
-    "build": "pnpm build:types && pnpm build:server && pnpm build:vite && pnpm build:compiler && pnpm build:client",
+    "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:server --watch\" \"pnpm build:vite --watch\" \"pnpm build:compilers --watch\" \"pnpm build:client --watch\"",
+    "build": "pnpm build:types && pnpm build:server && pnpm build:vite && pnpm build:compilers && pnpm build:client",
     "build:types": "tsc --emitDeclarationOnly --declaration --skipLibCheck",
     "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/server.js",
     "build:vite": "esbuild src/vite.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/vite.js",
-    "build:compiler": "esbuild src/compiler.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/compiler.js",
+    "build:compilers": "esbuild src/compilers.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/compilers.js",
     "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js"
   },
   "exports": {
     ".": "./dist/client.js",
     "./server": "./dist/server.js",
     "./vite": "./dist/vite.js",
-    "./compiler": "./dist/compiler.js",
+    "./compilers": "./dist/compilers.js",
     "./package.json": "./package.json"
   },
   "types": "./dist/server.d.ts",
@@ -39,8 +39,8 @@
       "vite": [
         "./dist/vite.d.ts"
       ],
-      "compiler": [
-        "./dist/compiler.d.ts"
+      "compilers": [
+        "./dist/compilers.d.ts"
       ]
     }
   },
