@@ -106,11 +106,14 @@ export async function compileFile(opts: {
                       CallExpression: (path) => {
                         if (path.node.callee.type === 'Identifier') {
                           if (path.node.callee.name === 'fetch$') {
-                            // ServerFn RPCs
-                            transformServerFn$(path, state)
+                            // Fetch RPCs
+                            transformFetch$(path, state)
                           } else if (path.node.callee.name === 'split$') {
                             // Code splitting
                             transformSplit$(path, state)
+                          } else if (path.node.callee.name === 'server$') {
+                            // Server-only expressions
+                            transformServer$(path, state)
                           }
                         }
                       },
@@ -210,10 +213,7 @@ export async function compileFile(opts: {
     virtualModules,
   }
 }
-function transformServerFn$(
-  path: babel.NodePath<t.CallExpression>,
-  state: State,
-) {
+function transformFetch$(path: babel.NodePath<t.CallExpression>, state: State) {
   const fetchFn = path.get('arguments')[0]
   const fetchFnOpts = path.get('arguments')[1]
   let program = path.findParent((p) => t.isProgram(p))
@@ -368,6 +368,19 @@ function transformSplit$(path: babel.NodePath<t.CallExpression>, state: State) {
   }
 
   path.replaceWith(t.identifier(`$$split${splitIndex}`))
+}
+
+function transformServer$(
+  path: babel.NodePath<t.CallExpression>,
+  state: State,
+) {
+  const expression = path.node.arguments[0]
+
+  if (state.opts.ssr) {
+    path.replaceWith(expression)
+  } else {
+    path.replaceWith(t.identifier('undefined'))
+  }
 }
 
 function trackProgram(path: babel.NodePath, state: State) {

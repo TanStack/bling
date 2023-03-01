@@ -1,4 +1,4 @@
-import { fetch$, split$ } from '@tanstack/bling'
+import { fetch$, split$, server$ } from '@tanstack/bling'
 import { secret } from './secret.server$'
 
 const fetchHello = fetch$(() => console.log('Hello world'))
@@ -13,8 +13,14 @@ function SplitHello() {
   return <button onClick={() => splitHello()}>Split Hello</button>
 }
 
+const inlineSecret = server$('I am an inline server secret!')
+
 export function App() {
-  console.log('Do you know the secret?', secret)
+  console.log('Do you know the server secret?', secret ?? 'Nope.')
+  console.log(
+    'Do you know the inline server secret?',
+    inlineSecret ?? 'Not even.',
+  )
 
   return (
     <html>

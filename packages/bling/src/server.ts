@@ -23,6 +23,7 @@ import type {
   FetchFnCtxWithRequest,
   SplitFn,
   CreateSplitFn,
+  CreateServerFn,
 } from './types'
 
 export * from './utils/utils'
@@ -291,5 +292,9 @@ export function hasHandler(pathname: string) {
 }
 
 export const split$: CreateSplitFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}
+
+export const server$: CreateServerFn = (_value) => {
   throw new Error('Should be compiled away')
 }

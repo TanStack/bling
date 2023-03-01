@@ -112,26 +112,7 @@ A function that can be called isomorphically from server or client side code to 
         - The request object to be passed to the `fetch` call to the server function.
         - Can be used to add headers, signals, etc.
 
-## Server-Only Files (`filename.server$.ext`)
-
-The `filename.server$.ext` pattern can be used to create server-side only files. These files will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code. It works with any file name and extension so long as `.server$.` is found in the resolved file pathname.
-
-When a server-only file is imported on the client, it will be provided the same exports, but stubbed with undefined values. Don't put anything sensitive in the exported variable name! 😜
-
-```tsx
-// secret.server$.ts`
-export const secret = 'This is top secret!'
-export const anotherSecret = '🤫 Shhh!'
-```
-
-Client output:
-
-```tsx
-export const secret = undefined
-export const anotherSecret = undefined
-```
-
-## `server$` (Coming Soon)
+## `server$`
 
 The `server$` function can be used to scope any expression to the server-bundle only. This means that the expression will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code.
 
@@ -156,8 +137,10 @@ const serverOnly = undefined
 ### Signature
 
 ```tsx
-server$<T>(input: T): T | undefined
+server$<T>(input: T): T
 ```
+
+> 🧠 The return type is the same as the input type. Although the value could technically be `undefined` on the client, it's more useful to retain a non-nullable type in the wild.
 
 ### Arguments
 
@@ -169,7 +152,26 @@ server$<T>(input: T): T | undefined
 - The variable on the server
 - `undefined` on the client
 
-## `split$` (Coming Soon)
+## Server-Only Files (`filename.server$.ext`)
+
+The `[filename].server$.[ext]` pattern can be used to create server-side only files. These files will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code. It works with any file name and extension so long as `.server$.` is found in the resolved file pathname.
+
+When a server-only file is imported on the client, it will be provided the same exports, but stubbed with undefined values. Don't put anything sensitive in the exported variable name! 😜
+
+```tsx
+// secret.server$.ts`
+export const secret = 'This is top secret!'
+export const anotherSecret = '🤫 Shhh!'
+```
+
+Client output:
+
+```tsx
+export const secret = undefined
+export const anotherSecret = undefined
+```
+
+## `split$`
 
 The `split$` function can be used to code-split any asynchronous function on both server and client at build-time.
 
