@@ -43,7 +43,7 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
       let viteCompile = (
         code: string,
         id: string,
-        fn?: (source: any, id: any) => { plugins: any[] }
+        fn?: (source: any, id: any) => { plugins: any[] },
       ) => {
         let plugin = viteReact({
           ...(options ?? {}),
@@ -63,7 +63,7 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         return compiled.code
       }
 
-      if (code.includes('serverFn$(' || code.includes('split$('))) {
+      if (code.includes('fetch$(' || code.includes('split$('))) {
         const compiled = await compileFile({
           code,
           viteCompile,

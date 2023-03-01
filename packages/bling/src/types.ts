@@ -8,56 +8,56 @@ export type Serializer = {
 
 export type Deserializer = {
   apply: (value: any) => any
-  deserialize: (value: any, ctx: ServerFnCtx) => any
+  deserialize: (value: any, ctx: FetchFnCtx) => any
 }
 
-export type AnyServerFn = (payload: any, ctx: ServerFnCtx) => any
+export type AnyFetchFn = (payload: any, ctx: FetchFnCtx) => any
 
-export type ServerFnReturn<T extends AnyServerFn> = Awaited<
+export type FetchFnReturn<T extends AnyFetchFn> = Awaited<
   ReturnType<T>
 > extends JsonResponse<infer R>
   ? R
   : ReturnType<T>
 
-export type CreateFetcherFn = <T extends AnyServerFn>(
+export type CreateFetcherFn = <T extends AnyFetchFn>(
   fn: T,
-  opts?: ServerFnCtx
+  opts?: FetchFnCtx,
 ) => Fetcher<T>
 
-export type FetcherFn<T extends AnyServerFn> = (
+export type FetcherFn<T extends AnyFetchFn> = (
   payload: Parameters<T>['0'] extends undefined
     ? void | undefined
     : Parameters<T>['0'],
-  opts?: ServerFnCtx
-) => Promise<Awaited<ServerFnReturn<T>>>
+  opts?: FetchFnCtx,
+) => Promise<Awaited<FetchFnReturn<T>>>
 
-export type FetcherMethods<T extends AnyServerFn> = {
+export type FetcherMethods<T extends AnyFetchFn> = {
   url: string
   fetch: (
     init: RequestInit,
-    opts?: ServerFnCtxOptions
-  ) => Promise<Awaited<ServerFnReturn<T>>>
+    opts?: FetchFnCtxOptions,
+  ) => Promise<Awaited<FetchFnReturn<T>>>
 }
 
-export type Fetcher<T extends AnyServerFn> = FetcherFn<T> & FetcherMethods<T>
+export type Fetcher<T extends AnyFetchFn> = FetcherFn<T> & FetcherMethods<T>
 
 export interface JsonResponse<TData> extends Response {}
 
-export type ServerFnCtxBase = {
+export type FetchFnCtxBase = {
   method?: 'GET' | 'POST'
 }
 
-export type ServerFnCtxOptions = ServerFnCtxBase & {
+export type FetchFnCtxOptions = FetchFnCtxBase & {
   request?: RequestInit
   __hasRequest?: never
 }
 
-export type ServerFnCtxWithRequest = ServerFnCtxBase & {
+export type FetchFnCtxWithRequest = FetchFnCtxBase & {
   request: Request
   __hasRequest: true
 }
 
-export type ServerFnCtx = ServerFnCtxOptions | ServerFnCtxWithRequest
+export type FetchFnCtx = FetchFnCtxOptions | FetchFnCtxWithRequest
 
 export type NonFnProps<T> = {
   [TKey in keyof T]: TKey extends (...args: any[]) => any ? never : T[TKey]

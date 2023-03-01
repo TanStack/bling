@@ -1,6 +1,6 @@
 // All credit for this work goes to the amazing Next.js team.
 // https://github.com/vercel/next.js/blob/canary/packages/next/build/babel/plugins/next-ssg-transform.ts
-// This is adapted to work with any serverFn$() calls and transpile it into multiple api function for a file.
+// This is adapted to work with any fetch$() calls and transpile it into multiple api function for a file.
 
 // @ts-ignore
 import crypto from 'crypto'
@@ -105,7 +105,7 @@ export async function compileFile(opts: {
                     {
                       CallExpression: (path) => {
                         if (path.node.callee.type === 'Identifier') {
-                          if (path.node.callee.name === 'serverFn$') {
+                          if (path.node.callee.name === 'fetch$') {
                             // ServerFn RPCs
                             transformServerFn$(path, state)
                           } else if (path.node.callee.name === 'split$') {
@@ -121,12 +121,12 @@ export async function compileFile(opts: {
                           path.node.source.value === '@tanstack/bling'
                         ) {
                           path.node.source = t.stringLiteral(
-                            '@tanstack/bling/server'
+                            '@tanstack/bling/server',
                           )
                         }
                       },
                     },
-                    state
+                    state,
                   )
 
                   splitModulesById = { ...state.splitModulesById }
@@ -143,7 +143,7 @@ export async function compileFile(opts: {
           },
         ],
       ].filter(Boolean),
-    })
+    }),
   )
 
   let virtualModules: Record<string, string> = {}
@@ -169,7 +169,7 @@ export async function compileFile(opts: {
                     path.replaceWith(path.node.declaration!)
                   },
                 },
-                state as State
+                state as State,
               )
 
               const fnCode = new CodeGenerator(splitModule.node).generate().code
@@ -177,7 +177,7 @@ export async function compileFile(opts: {
               path.node.body.push(
                 template.smart(`
                   export default ${fnCode}
-                `)() as t.Statement
+                `)() as t.Statement,
               )
 
               treeShake(path, state)
@@ -200,9 +200,9 @@ export async function compileFile(opts: {
               },
             ],
           ].filter(Boolean),
-        })
+        }),
       )
-    })
+    }),
   )
 
   return {
@@ -212,7 +212,7 @@ export async function compileFile(opts: {
 }
 function transformServerFn$(
   path: babel.NodePath<t.CallExpression>,
-  state: State
+  state: State,
 ) {
   const serverFn = path.get('arguments')[0]
   const serverFnOpts = path.get('arguments')[1]
@@ -227,7 +227,7 @@ function transformServerFn$(
     (p) =>
       p.isVariableDeclarator() ||
       p.isFunctionDeclaration() ||
-      p.isObjectProperty()
+      p.isObjectProperty(),
   ) as babel.NodePath<any>
   let serverIndex = state.serverIndex++
   let hasher = state.opts.minify ? hashFn : (str: string) => str
@@ -238,7 +238,7 @@ function transformServerFn$(
   serverFn.traverse({
     MemberExpression(path) {
       let obj = path.get('object')
-      if (obj.node.type === 'Identifier' && obj.node.name === 'serverFn$') {
+      if (obj.node.type === 'Identifier' && obj.node.name === 'fetch$') {
         obj.replaceWith(t.identifier('$$ctx'))
         return
       }
@@ -259,8 +259,8 @@ function transformServerFn$(
         serverFn.node.params,
         serverFn.node.body as t.BlockStatement,
         false,
-        true
-      )
+        true,
+      ),
     )
   }
 
@@ -269,7 +269,7 @@ function transformServerFn$(
       'body',
       t.variableDeclaration('const', [
         t.variableDeclarator(t.identifier('$$ctx'), t.thisExpression()),
-      ])
+      ]),
     )
   }
 
@@ -280,19 +280,19 @@ function transformServerFn$(
       decl?.node.id?.elements?.[0]?.name ??
         decl?.node.id?.name ??
         decl?.node.key?.name ??
-        'fn'
+        'fn',
     )
     .replaceAll('\\', '/')
 
   if (state.opts.ssr) {
     statement.insertBefore(
       template.smart(`
-    const $$server_module${serverIndex} = serverFn$.createHandler(%%source%%, "${pathname}", %%options%%);
-    serverFn$.registerHandler("${pathname}", $$server_module${serverIndex});
+    const $$server_module${serverIndex} = fetch$.createHandler(%%source%%, "${pathname}", %%options%%);
+    fetch$.registerHandler("${pathname}", $$server_module${serverIndex});
     `)({
         source: serverFn.node,
         options: serverFnOpts?.node || t.identifier('undefined'),
-      })
+      }),
     )
   } else {
     statement.insertBefore(
@@ -300,13 +300,13 @@ function transformServerFn$(
         `
       ${
         process.env.TEST_ENV === 'client'
-          ? `serverFn$.registerHandler("${pathname}", serverFn$.createHandler(%%source%%, "${pathname}", %%options%%));`
+          ? `fetch$.registerHandler("${pathname}", fetch$.createHandler(%%source%%, "${pathname}", %%options%%));`
           : ``
       }
-      const $$server_module${serverIndex} = serverFn$.createFetcher("${pathname}", %%options%%);`,
+      const $$server_module${serverIndex} = fetch$.createFetcher("${pathname}", %%options%%);`,
         {
           syntacticPlaceholders: true,
-        }
+        },
       )(
         process.env.TEST_ENV === 'client'
           ? {
@@ -315,8 +315,8 @@ function transformServerFn$(
             }
           : {
               options: serverFnOpts?.node || t.identifier('undefined'),
-            }
-      )
+            },
+      ),
     )
   }
   path.replaceWith(t.identifier(`$$server_module${serverIndex}`))
@@ -340,7 +340,7 @@ function transformSplit$(path: babel.NodePath<t.CallExpression>, state: State) {
     (p) =>
       p.isVariableDeclarator() ||
       p.isFunctionDeclaration() ||
-      p.isObjectProperty()
+      p.isObjectProperty(),
   ) as babel.NodePath<any>
 
   const id = nodePath
@@ -350,7 +350,7 @@ function transformSplit$(path: babel.NodePath<t.CallExpression>, state: State) {
       decl?.node.id?.elements?.[0]?.name ??
         decl?.node.id?.name ??
         decl?.node.key?.name ??
-        'fn'
+        'fn',
     )
     .replaceAll('\\', '/')
 
@@ -359,7 +359,7 @@ function transformSplit$(path: babel.NodePath<t.CallExpression>, state: State) {
     const $$split${splitIndex} = (...args) => import('$PATHNAME').then((m) => m.default(...args));
     `)({
       $PATHNAME: `${virtualModuleSplitPrefix}${id}`,
-    })
+    }),
   )
 
   state.splitModulesById[id] = {
@@ -384,7 +384,7 @@ function trackProgram(path: babel.NodePath, state: State) {
         } else if (variablePath.node.id.type === 'ObjectPattern') {
           const pattern = variablePath.get('id')
           const properties = pattern.get(
-            'properties'
+            'properties',
           ) as babel.NodePath<babel.types.Node>[]
           properties.forEach((p) => {
             const local = p.get(
@@ -394,7 +394,7 @@ function trackProgram(path: babel.NodePath, state: State) {
                 ? 'argument'
                 : (function () {
                     throw new Error('invariant')
-                  })()
+                  })(),
             ) as babel.NodePath<babel.types.Node>
 
             if (isIdentifierReferenced(local)) {
@@ -404,7 +404,7 @@ function trackProgram(path: babel.NodePath, state: State) {
         } else if (variablePath.node.id.type === 'ArrayPattern') {
           const pattern = variablePath.get('id')
           const elements = pattern.get(
-            'elements'
+            'elements',
           ) as babel.NodePath<babel.types.Node>[]
           elements.forEach((e) => {
             let local: babel.NodePath
@@ -430,7 +430,7 @@ function trackProgram(path: babel.NodePath, state: State) {
       ImportDefaultSpecifier: markImport,
       ImportNamespaceSpecifier: markImport,
     },
-    state
+    state,
   )
 }
 
@@ -462,7 +462,7 @@ function treeShake(path: babel.NodePath, state: State) {
   function sweepImport(
     sweepPath: babel.NodePath<
       t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
-    >
+    >,
   ) {
     const local = sweepPath.get('local')
     if (refs.has(local) && !isIdentifierReferenced(local)) {
@@ -500,7 +500,7 @@ function treeShake(path: babel.NodePath, state: State) {
                 ? 'argument'
                 : (function () {
                     throw new Error('invariant')
-                  })()
+                  })(),
             ) as babel.NodePath
 
             if (refs.has(local) && !isIdentifierReferenced(local)) {

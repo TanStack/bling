@@ -14,13 +14,13 @@ import {
   resolveRequestHref,
 } from './utils/utils'
 import type {
-  AnyServerFn,
+  AnyFetchFn,
   Deserializer,
   Fetcher,
-  ServerFnCtx,
+  FetchFnCtx,
   CreateFetcherFn,
-  ServerFnCtxOptions,
-  ServerFnCtxWithRequest,
+  FetchFnCtxOptions,
+  FetchFnCtxWithRequest,
   SplitFn,
   CreateSplitFn,
 } from './types'
@@ -35,14 +35,14 @@ export function addDeserializer(deserializer: Deserializer) {
 
 export type ServerFetcherMethods = {
   createHandler(
-    fn: AnyServerFn,
+    fn: AnyFetchFn,
     pathame: string,
-    opts: ServerFnCtxOptions
+    opts: FetchFnCtxOptions,
   ): Fetcher<any>
   registerHandler(pathname: string, handler: Fetcher<any>): void
 }
 
-export type ServerFn = CreateFetcherFn & ServerFetcherMethods
+export type FetchFn = CreateFetcherFn & ServerFetcherMethods
 
 const serverImpl = (() => {
   throw new Error('Should be compiled away')
@@ -50,11 +50,11 @@ const serverImpl = (() => {
 
 const serverMethods: ServerFetcherMethods = {
   createHandler: (
-    fn: AnyServerFn,
+    fn: AnyFetchFn,
     pathname: string,
-    defaultOpts?: ServerFnCtxOptions
+    defaultOpts?: FetchFnCtxOptions,
   ): Fetcher<any> => {
-    return createFetcher(pathname, async (payload: any, opts?: ServerFnCtx) => {
+    return createFetcher(pathname, async (payload: any, opts?: FetchFnCtx) => {
       const method = opts?.method || defaultOpts?.method || 'POST'
 
       console.log(`Executing server function: ${method}  ${pathname}`)
@@ -81,8 +81,8 @@ const serverMethods: ServerFetcherMethods = {
             },
             payloadInit,
             defaultOpts?.request,
-            opts?.request
-          )
+            opts?.request,
+          ),
         )
       }
 
@@ -103,7 +103,7 @@ const serverMethods: ServerFetcherMethods = {
           const error = new Error(
             e.message +
               '\n' +
-              ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.'
+              ' You probably are using a variable defined in a closure in your server function. Make sure you pass any variables needed to the server function as arguments. These arguments must be serializable.',
           )
           error.stack = e.stack ?? ''
           throw error
@@ -118,16 +118,16 @@ const serverMethods: ServerFetcherMethods = {
   },
 }
 
-export const serverFn$: ServerFn = Object.assign(serverImpl, serverMethods)
+export const fetch$: FetchFn = Object.assign(serverImpl, serverMethods)
 
 export async function handleEvent(
-  _ctx: Omit<ServerFnCtxWithRequest, '__hasRequest'>
+  _ctx: Omit<FetchFnCtxWithRequest, '__hasRequest'>,
 ) {
   if (!_ctx.request) {
     throw new Error('handleEvent must be called with a request.')
   }
 
-  const ctx: ServerFnCtxWithRequest = { ..._ctx, __hasRequest: true }
+  const ctx: FetchFnCtxWithRequest = { ..._ctx, __hasRequest: true }
 
   const url = new URL(ctx.request.url)
 
@@ -151,7 +151,7 @@ export async function handleEvent(
   return null
 }
 
-async function parseRequest(event: ServerFnCtxWithRequest) {
+async function parseRequest(event: FetchFnCtxWithRequest) {
   let request = event.request
   let contentType = request.headers.get(ContentTypeHeader)
   let pathname = new URL(request.url).pathname,
@@ -195,9 +195,9 @@ async function parseRequest(event: ServerFnCtxWithRequest) {
 }
 
 function respondWith(
-  ctx: ServerFnCtxWithRequest,
+  ctx: FetchFnCtxWithRequest,
   data: Response | Error | string | object,
-  responseType: 'throw' | 'return'
+  responseType: 'throw' | 'return',
 ) {
   if (data instanceof Response) {
     if (
@@ -250,7 +250,7 @@ function respondWith(
           [XBlingResponseTypeHeader]: responseType,
           [XBlingContentTypeHeader]: 'error',
         },
-      }
+      },
     )
   }
 

@@ -18,7 +18,8 @@
     "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/server.js",
     "build:vite": "esbuild src/vite.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/vite.js",
     "build:compilers": "esbuild src/compilers.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/compilers.js",
-    "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js"
+    "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js",
+    "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write"
   },
   "exports": {
     ".": "./dist/client.js",

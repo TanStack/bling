@@ -6,9 +6,9 @@ Framework agnostic transpilation utilities for client/server RPCs, env isolation
 
 # API
 
-## `serverFn$`
+## `fetch$`
 
-The `serverFn$` function is used to create an isomorphic server-side RPC. It takes a function and an optional configuration object and returns a function that can be called on both server (ssr or ssg) and client. The function passed to `serverFn$` will only be executed on the server. On the client, a `fetch` call is made to the server function instead. The results of the function will be exactly the same on both server and client.
+The `fetch$` function is used to create an isomorphic server-side RPC. It takes a function and an optional configuration object and returns a function that can be called on both server (ssr or ssg) and client. The function passed to `fetch$` will only be executed on the server. On the client, a `fetch` call is made to the server function instead. The results of the function will be exactly the same on both server and client.
 
 **🧠 Important Notes**:
 
@@ -16,9 +16,9 @@ The `serverFn$` function is used to create an isomorphic server-side RPC. It tak
 - The fetch calls made by the client default to using the `POST` method and passing arguments via the request body. To use `GET` requests and search-param payloads instead, the `opts.method` can be set to `GET`. This will automatically configure both the method and the payload serialization to work via search params instead of a request body. You can also alter the actual request (and request body) manually to your liking.
 
 ```tsx
-import { serverFn$ } from '@tanstack/bling'
+import { fetch$ } from '@tanstack/bling'
 
-const serverFn = serverFn$(async (payload) => {
+const serverFn = fetch$(async (payload) => {
   // do something
   return 'result'
 })
@@ -27,7 +27,7 @@ const serverFn = serverFn$(async (payload) => {
 ### Signature
 
 ```tsx
-serverFn$<T extends (...args: any[]) => Promise<any>>(fn: T, options: {
+fetch$<T extends (...args: any[]) => Promise<any>>(fn: T, options: {
   method?: 'POST' | 'GET' // Defaults to `POST`
   request?: RequestInit
 }): T
@@ -209,9 +209,9 @@ The following APIs are proposed for future versions of Bling. They are not yet i
 
 ## `worker$`
 
-The `worker$` function is used to create an isomorphic Web Worker and interact with it. On the server, the function will run in the same process as the server. On the client, the function will be compiled to a Web Worker and will return an interface similar to `serverFn$` to make it easy to call from the client
+The `worker$` function is used to create an isomorphic Web Worker and interact with it. On the server, the function will run in the same process as the server. On the client, the function will be compiled to a Web Worker and will return an interface similar to `fetch$` to make it easy to call from the client
 
-> 🧠 Similar to `serverFn$`, data sent to and from workers will be serialized. This means that you can pass any JSON-serializable data to the worker, but you cannot pass functions or classes. If you need to use non-serializable assets in your worker, you can import them and use them directly in the worker function, however the instances of those assets will be unique to the worker thread.
+> 🧠 Similar to `fetch$`, data sent to and from workers will be serialized. This means that you can pass any JSON-serializable data to the worker, but you cannot pass functions or classes. If you need to use non-serializable assets in your worker, you can import them and use them directly in the worker function, however the instances of those assets will be unique to the worker thread.
 
 ```tsx
 import { worker$ } from '@tanstack/bling'

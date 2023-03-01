@@ -1,6 +1,6 @@
 import {
   mergeRequestInits,
-  mergeServerOpts,
+  mergeFetchOpts,
   parseResponse,
   payloadRequestInit,
   resolveRequestHref,
@@ -9,13 +9,13 @@ import {
 } from './utils/utils'
 
 import type {
-  AnyServerFn,
+  AnyFetchFn,
   Serializer,
   FetcherFn,
   FetcherMethods,
-  ServerFnReturn,
-  ServerFnCtxOptions,
-  ServerFnCtx,
+  FetchFnReturn,
+  FetchFnCtxOptions,
+  FetchFnCtx,
   CreateSplitFn,
 } from './types'
 
@@ -29,37 +29,37 @@ export function addSerializer({ apply, serialize }: Serializer) {
   serializers.push({ apply, serialize })
 }
 
-export type CreateClientFetcherFn = <T extends AnyServerFn>(
+export type CreateClientFetcherFn = <T extends AnyFetchFn>(
   fn: T,
-  opts?: ServerFnCtxOptions
+  opts?: FetchFnCtxOptions,
 ) => ClientFetcher<T>
 
 export type CreateClientFetcherMethods = {
   createFetcher(
     route: string,
-    defualtOpts: ServerFnCtxOptions
+    defualtOpts: FetchFnCtxOptions,
   ): ClientFetcher<any>
 }
 
-export type ClientFetcher<T extends AnyServerFn> = FetcherFn<T> &
+export type ClientFetcher<T extends AnyFetchFn> = FetcherFn<T> &
   FetcherMethods<T>
 
-export type ClientFetcherMethods<T extends AnyServerFn> = FetcherMethods<T> & {
+export type ClientFetcherMethods<T extends AnyFetchFn> = FetcherMethods<T> & {
   fetch: (
     init: RequestInit,
-    opts?: ServerFnCtxOptions
-  ) => Promise<Awaited<ServerFnReturn<T>>>
+    opts?: FetchFnCtxOptions,
+  ) => Promise<Awaited<FetchFnReturn<T>>>
 }
 
-export type ClientServerFn = CreateClientFetcherFn & CreateClientFetcherMethods
+export type ClientFetchFn = CreateClientFetcherFn & CreateClientFetcherMethods
 
-const serverImpl = (() => {
+const fetchImpl = (() => {
   throw new Error('Should be compiled away')
 }) as any
 
-const serverMethods: CreateClientFetcherMethods = {
-  createFetcher: (pathname: string, defaultOpts?: ServerFnCtxOptions) => {
-    const fetcherImpl = async (payload: any, opts?: ServerFnCtxOptions) => {
+const fetchMethods: CreateClientFetcherMethods = {
+  createFetcher: (pathname: string, defaultOpts?: FetchFnCtxOptions) => {
+    const fetcherImpl = async (payload: any, opts?: FetchFnCtxOptions) => {
       const method = opts?.method || defaultOpts?.method || 'POST'
 
       const baseInit: RequestInit = {
@@ -79,8 +79,8 @@ const serverMethods: CreateClientFetcherMethods = {
           baseInit,
           payloadInit,
           defaultOpts?.request,
-          opts?.request
-        )
+          opts?.request,
+        ),
       )
 
       const response = await fetch(request)
@@ -95,8 +95,8 @@ const serverMethods: CreateClientFetcherMethods = {
 
     const fetcherMethods: ClientFetcherMethods<any> = {
       url: pathname,
-      fetch: (request: RequestInit, opts?: ServerFnCtxOptions) => {
-        return fetcherImpl(undefined, mergeServerOpts({ request }, opts))
+      fetch: (request: RequestInit, opts?: FetchFnCtxOptions) => {
+        return fetcherImpl(undefined, mergeFetchOpts({ request }, opts))
       },
     }
 
@@ -104,10 +104,7 @@ const serverMethods: CreateClientFetcherMethods = {
   },
 }
 
-export const serverFn$: ClientServerFn = Object.assign(
-  serverImpl,
-  serverMethods
-)
+export const fetch$: ClientFetchFn = Object.assign(fetchImpl, fetchMethods)
 
 export const split$: CreateSplitFn = (_fn) => {
   throw new Error('Should be compiled away')

@@ -1,7 +1,7 @@
-import { serverFn$, split$ } from '@tanstack/bling'
+import { fetch$, split$ } from '@tanstack/bling'
 import { secret } from './secret.server$'
 
-const serverFnHello = serverFn$(() => console.log('Hello world'))
+const serverFnHello = fetch$(() => console.log('Hello world'))
 
 const splitHello = split$(() => console.log('Hello split!'))
 

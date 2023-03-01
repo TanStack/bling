@@ -1,12 +1,12 @@
 import {
-  AnyServerFn,
+  AnyFetchFn,
   JsonResponse,
   Serializer,
   Fetcher,
   FetcherFn,
   FetcherMethods,
-  ServerFnCtx,
-  ServerFnCtxOptions,
+  FetchFnCtx,
+  FetchFnCtxOptions,
 } from '../types'
 
 export const XBlingStatusCodeHeader = 'x-bling-status-code'
@@ -23,7 +23,7 @@ export const JSONResponseType = 'application/json'
  */
 export function json<TData>(
   data: TData,
-  init: number | ResponseInit = {}
+  init: number | ResponseInit = {},
 ): JsonResponse<TData> {
   let responseInit: any = init
   if (typeof init === 'number') {
@@ -52,7 +52,7 @@ export function json<TData>(
  */
 export function redirect(
   url: string,
-  init: number | ResponseInit = 302
+  init: number | ResponseInit = 302,
 ): Response {
   let responseInit = init
   if (typeof responseInit === 'number') {
@@ -84,7 +84,7 @@ export function redirect(
 
 export function eventStream(
   request: Request,
-  init: (send: (event: string, data: any) => void) => () => void
+  init: (send: (event: string, data: any) => void) => () => void,
 ) {
   let stream = new ReadableStream({
     start(controller) {
@@ -127,7 +127,7 @@ export function isResponse(value: any): value is Response {
 const redirectStatusCodes = new Set([204, 301, 302, 303, 307, 308])
 
 export function isRedirectResponse(
-  response: Response | any
+  response: Response | any,
 ): response is Response {
   return (
     response &&
@@ -203,7 +203,7 @@ export async function parseResponse(response: Response) {
   return response
 }
 
-export function mergeServerOpts(...objs: (ServerFnCtxOptions | undefined)[]) {
+export function mergeFetchOpts(...objs: (FetchFnCtxOptions | undefined)[]) {
   return Object.assign.call(null, [
     {},
     ...objs,
@@ -215,7 +215,7 @@ export function mergeServerOpts(...objs: (ServerFnCtxOptions | undefined)[]) {
 
 export function payloadRequestInit(
   payload: any,
-  serializers: false | Serializer[]
+  serializers: false | Serializer[],
 ) {
   let req: RequestInit = {}
 
@@ -232,7 +232,7 @@ export function payloadRequestInit(
             }
             return value
           }
-        : undefined
+        : undefined,
     )
 
     req.headers = {
@@ -243,14 +243,14 @@ export function payloadRequestInit(
   return req
 }
 
-export function createFetcher<T extends AnyServerFn>(
+export function createFetcher<T extends AnyFetchFn>(
   route: string,
-  fetcherImpl: FetcherFn<T>
+  fetcherImpl: FetcherFn<T>,
 ): Fetcher<T> {
   const fetcherMethods: FetcherMethods<T> = {
     url: route,
-    fetch: (request: RequestInit, ctx?: ServerFnCtxOptions) => {
-      return fetcherImpl(undefined, mergeServerOpts({ request }, ctx))
+    fetch: (request: RequestInit, ctx?: FetchFnCtxOptions) => {
+      return fetcherImpl(undefined, mergeFetchOpts({ request }, ctx))
     },
   }
 
@@ -260,7 +260,7 @@ export function createFetcher<T extends AnyServerFn>(
 export function resolveRequestHref(
   pathname: string,
   method: 'GET' | 'POST',
-  payloadInit: RequestInit
+  payloadInit: RequestInit,
 ) {
   const resolved =
     method.toLowerCase() === 'get'
@@ -269,6 +269,6 @@ export function resolveRequestHref(
 
   return new URL(
     resolved,
-    typeof document !== 'undefined' ? window.location.href : `http://localhost`
+    typeof document !== 'undefined' ? window.location.href : `http://localhost`,
   ).href
 }
