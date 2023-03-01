@@ -214,8 +214,8 @@ function transformServerFn$(
   path: babel.NodePath<t.CallExpression>,
   state: State,
 ) {
-  const serverFn = path.get('arguments')[0]
-  const serverFnOpts = path.get('arguments')[1]
+  const fetchFn = path.get('arguments')[0]
+  const fetchFnOpts = path.get('arguments')[1]
   let program = path.findParent((p) => t.isProgram(p))
   let statement = path.findParent((p) => {
     const body = program!.get('body') as babel.NodePath<babel.types.Node>[]
@@ -235,7 +235,7 @@ function transformServerFn$(
 
   const hash = hasher(nodePath.join(fName, String(serverIndex)))
 
-  serverFn.traverse({
+  fetchFn.traverse({
     MemberExpression(path) {
       let obj = path.get('object')
       if (obj.node.type === 'Identifier' && obj.node.name === 'fetch$') {
@@ -245,27 +245,27 @@ function transformServerFn$(
     },
   })
 
-  if (serverFn.node.type === 'ArrowFunctionExpression') {
-    const body = serverFn.get('body') as babel.NodePath<babel.types.Node>
+  if (fetchFn.node.type === 'ArrowFunctionExpression') {
+    const body = fetchFn.get('body') as babel.NodePath<babel.types.Node>
 
     if (body.node.type !== 'BlockStatement') {
       const block = t.blockStatement([t.returnStatement(body.node as any)])
       body.replaceWith(block)
     }
 
-    serverFn.replaceWith(
+    fetchFn.replaceWith(
       t.functionExpression(
         t.identifier('$$serverHandler' + serverIndex),
-        serverFn.node.params,
-        serverFn.node.body as t.BlockStatement,
+        fetchFn.node.params,
+        fetchFn.node.body as t.BlockStatement,
         false,
         true,
       ),
     )
   }
 
-  if (serverFn.node.type === 'FunctionExpression') {
-    ;(serverFn.get('body') as any).unshiftContainer(
+  if (fetchFn.node.type === 'FunctionExpression') {
+    ;(fetchFn.get('body') as any).unshiftContainer(
       'body',
       t.variableDeclaration('const', [
         t.variableDeclarator(t.identifier('$$ctx'), t.thisExpression()),
@@ -290,8 +290,8 @@ function transformServerFn$(
     const $$server_module${serverIndex} = fetch$.createHandler(%%source%%, "${pathname}", %%options%%);
     fetch$.registerHandler("${pathname}", $$server_module${serverIndex});
     `)({
-        source: serverFn.node,
-        options: serverFnOpts?.node || t.identifier('undefined'),
+        source: fetchFn.node,
+        options: fetchFnOpts?.node || t.identifier('undefined'),
       }),
     )
   } else {
@@ -310,11 +310,11 @@ function transformServerFn$(
       )(
         process.env.TEST_ENV === 'client'
           ? {
-              source: serverFn.node,
-              options: serverFnOpts?.node || t.identifier('undefined'),
+              source: fetchFn.node,
+              options: fetchFnOpts?.node || t.identifier('undefined'),
             }
           : {
-              options: serverFnOpts?.node || t.identifier('undefined'),
+              options: fetchFnOpts?.node || t.identifier('undefined'),
             },
       ),
     )

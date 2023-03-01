@@ -1,10 +1,10 @@
 import { fetch$, split$ } from '@tanstack/bling'
 import { secret } from './secret.server$'
 
-const serverFnHello = fetch$(() => console.log('Hello world'))
+const fetchHello = fetch$(() => console.log('Hello world'))
 
 function ServerHello() {
-  return <button onClick={() => serverFnHello()}>ServerFn Hello</button>
+  return <button onClick={() => fetchHello()}>ServerFn Hello</button>
 }
 
 const splitHello = split$(() => console.log('I am code split!'))

@@ -18,7 +18,7 @@ The `fetch$` function is used to create an isomorphic server-side RPC. It takes 
 ```tsx
 import { fetch$ } from '@tanstack/bling'
 
-const serverFn = fetch$(async (payload) => {
+const fetchFn = fetch$(async (payload) => {
   // do something
   return 'result'
 })
