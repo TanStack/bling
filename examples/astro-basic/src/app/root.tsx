@@ -1,7 +1,9 @@
-import { serverFn$ } from '@tanstack/bling'
+import { serverFn$, split$ } from '@tanstack/bling'
 import { secret } from './secret.server$'
 
-const sayHello = serverFn$(() => console.log('Hello world'))
+const serverFnHello = serverFn$(() => console.log('Hello world'))
+
+const splitHello = split$(() => console.log('Hello split!'))
 
 export function App() {
   console.log('Do you know the secret?', secret)
@@ -13,7 +15,8 @@ export function App() {
       </head>
       <body>
         <div>Hello world</div>
-        <button onClick={() => sayHello()}>Click me</button>
+        <button onClick={() => serverFnHello()}>ServerFn Hello</button>
+        <button onClick={() => splitHello()}>Split Hello</button>
         <Scripts />
       </body>
     </html>

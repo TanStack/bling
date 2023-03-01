@@ -16,6 +16,7 @@ import type {
   ServerFnReturn,
   ServerFnCtxOptions,
   ServerFnCtx,
+  CreateSplitFn,
 } from './types'
 
 export * from './utils/utils'
@@ -107,3 +108,7 @@ export const serverFn$: ClientServerFn = Object.assign(
   serverImpl,
   serverMethods
 )
+
+export const split$: CreateSplitFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}

@@ -1,22 +1,26 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { compileServerFile$, compileServerFn$ } from './compilers'
+import { compileServerFile, compileFile } from './compilers'
+
+export const virtualModuleSplitPrefix = 'virtual:bling-split$-'
+export const virtualPrefix = '\0'
 
 export function bling(opts?: { babel?: Options['babel'] }): Plugin {
   const options = opts ?? {}
 
+  let virtualModules: Record<string, string> = {}
+
   return {
     name: 'vite-plugin-bling',
     enforce: 'pre',
-
-    transform(code, id, transformOptions) {
+    transform: async (code, id, transformOptions) => {
       const isSsr =
         transformOptions === null || transformOptions === void 0
           ? void 0
           : transformOptions.ssr
 
-      let ssr = process.env.TEST_ENV === 'client' ? false : isSsr
+      let ssr = process.env.TEST_ENV === 'client' ? false : !!isSsr
 
       const url = pathToFileURL(id)
       url.searchParams.delete('v')
@@ -36,7 +40,7 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
           }
         }
 
-      let compiler = (
+      let viteCompile = (
         code: string,
         id: string,
         fn?: (source: any, id: any) => { plugins: any[] }
@@ -52,22 +56,37 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
       }
 
       if (url.pathname.includes('.server$.') && !ssr) {
-        const compiled = compileServerFile$({
+        const compiled = compileServerFile({
           code,
         })
 
         return compiled.code
       }
 
-      if (code.includes('serverFn$(')) {
-        const compiled = compileServerFn$({
+      if (code.includes('serverFn$(' || code.includes('split$('))) {
+        const compiled = await compileFile({
           code,
-          compiler,
+          viteCompile,
           ssr,
           id: id.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
         })
 
+        virtualModules = compiled.virtualModules
+
         return compiled.code
+      }
+    },
+    resolveId(id) {
+      if (id.startsWith(virtualModuleSplitPrefix)) {
+        return virtualPrefix + id
+      }
+    },
+    load(_id) {
+      if (_id.startsWith(virtualPrefix)) {
+        const id = _id
+          .replace(virtualPrefix, '')
+          .replace(virtualModuleSplitPrefix, '')
+        return virtualModules[id]
       }
     },
   }

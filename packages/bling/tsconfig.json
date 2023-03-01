@@ -5,7 +5,9 @@
     "module": "ES2020",
     "moduleResolution": "node",
     "strict": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types", "./src/@types"]
   },
   "include": ["src"]
 }

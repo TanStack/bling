@@ -21,6 +21,8 @@ import type {
   CreateFetcherFn,
   ServerFnCtxOptions,
   ServerFnCtxWithRequest,
+  SplitFn,
+  CreateSplitFn,
 } from './types'
 
 export * from './utils/utils'
@@ -288,6 +290,6 @@ export function hasHandler(pathname: string) {
   return handlers.has(pathname)
 }
 
-// used to fetch from an API route on the server or client, without falling into
-// fetch problems on the server
-// serverFn$.fetch = fetch
+export const split$: CreateSplitFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}
