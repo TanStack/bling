@@ -3,7 +3,15 @@ import { secret } from './secret.server$'
 
 const serverFnHello = fetch$(() => console.log('Hello world'))
 
-const splitHello = split$(() => console.log('Hello split!'))
+function ServerHello() {
+  return <button onClick={() => serverFnHello()}>ServerFn Hello</button>
+}
+
+const splitHello = split$(() => console.log('I am code split!'))
+
+function SplitHello() {
+  return <button onClick={() => splitHello()}>Split Hello</button>
+}
 
 export function App() {
   console.log('Do you know the secret?', secret)
@@ -15,8 +23,8 @@ export function App() {
       </head>
       <body>
         <div>Hello world</div>
-        <button onClick={() => serverFnHello()}>ServerFn Hello</button>
-        <button onClick={() => splitHello()}>Split Hello</button>
+        <ServerHello />
+        <SplitHello />
         <Scripts />
       </body>
     </html>
