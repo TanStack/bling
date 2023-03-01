@@ -25,7 +25,9 @@ export type CreateFetcherFn = <T extends AnyServerFn>(
 ) => Fetcher<T>
 
 export type FetcherFn<T extends AnyServerFn> = (
-  payload: Parameters<T>['0'],
+  payload: Parameters<T>["0"] extends undefined
+     ? void | undefined
+     : Parameters<T>["0"],
   opts?: ServerFnCtx
 ) => Promise<Awaited<ServerFnReturn<T>>>
 
