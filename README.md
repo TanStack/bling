@@ -6,6 +6,13 @@ Framework agnostic transpilation utilities for client/server RPCs, env isolation
 
 # API
 
+- [`fetch$`](#fetch)
+- [`server$`](#server)
+- [Server-only Files](#server-only-files)
+- [`split$`](#split)
+- Proposed/Future APIs
+  - [`worker$`](#worker)
+
 ## `fetch$`
 
 The `fetch$` function is used to create an isomorphic server-side RPC. It takes a function and an optional configuration object and returns a function that can be called on both server (ssr or ssg) and client. The function passed to `fetch$` will only be executed on the server. On the client, a `fetch` call is made to the server function instead. The results of the function will be exactly the same on both server and client.
@@ -152,7 +159,7 @@ server$<T>(input: T): T
 - The variable on the server
 - `undefined` on the client
 
-## Server-Only Files (`filename.server$.ext`)
+## Server-Only Files
 
 The `[filename].server$.[ext]` pattern can be used to create server-side only files. These files will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code. It works with any file name and extension so long as `.server$.` is found in the resolved file pathname.
 
