@@ -78,7 +78,7 @@ const fetchMethods: CreateClientFetcherMethods = {
         resolvedHref,
         mergeRequestInits(
           baseInit,
-          payloadInit,
+          method === 'POST' ? payloadInit : undefined,
           defaultOpts?.request,
           opts?.request,
         ),
