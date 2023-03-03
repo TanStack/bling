@@ -156,11 +156,15 @@ export function mergeHeaders(...objs: (Headers | HeadersInit | undefined)[]) {
 }
 
 export function mergeRequestInits(...objs: (RequestInit | undefined)[]) {
-  return Object.assign.call(null, [
-    {},
-    ...objs,
-    { headers: mergeHeaders(...objs.map((o) => o && o.headers)) },
-  ])
+  const out = {} as Record<keyof RequestInit, any>
+  for (const obj of objs) {
+    if (!obj) continue
+    for (const key in obj) {
+      out[key as keyof RequestInit] = obj[key as keyof RequestInit]
+    }
+  }
+  out.headers = mergeHeaders(...objs.map((o) => o && o.headers))
+  return out as RequestInit
 }
 
 export async function parseResponse(response: Response) {
@@ -204,13 +208,9 @@ export async function parseResponse(response: Response) {
 }
 
 export function mergeFetchOpts(...objs: (FetchFnCtxOptions | undefined)[]) {
-  return Object.assign.call(null, [
-    {},
-    ...objs,
-    {
-      request: mergeRequestInits(...objs.map((o) => o && o.request)),
-    },
-  ])
+  return Object.assign.call(null, {}, ...objs, {
+    request: mergeRequestInits(...objs.map((o) => o && o.request)),
+  })
 }
 
 export function payloadRequestInit(
