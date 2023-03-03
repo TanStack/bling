@@ -208,13 +208,9 @@ export async function parseResponse(response: Response) {
 }
 
 export function mergeFetchOpts(...objs: (FetchFnCtxOptions | undefined)[]) {
-  return Object.assign.call(null, [
-    {},
-    ...objs,
-    {
-      request: mergeRequestInits(...objs.map((o) => o && o.request)),
-    },
-  ])
+  return Object.assign.call(null, {}, ...objs, {
+    request: mergeRequestInits(...objs.map((o) => o && o.request)),
+  })
 }
 
 export function payloadRequestInit(
