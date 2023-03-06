@@ -627,7 +627,7 @@ function transformLazy$(path: babel.NodePath<t.CallExpression>, state: State) {
           t.objectProperty(
             t.identifier('default'),
             t.awaitExpression(
-              t.callExpression(t.identifier('module$'), [expression]),
+              t.callExpression(t.identifier('import$'), [expression]),
             ),
           ),
         ]),
