@@ -94,7 +94,7 @@ const serverMethods: ServerFetcherMethods = {
 
       try {
         // Do the same parsing of the result as we do on the client
-        const response = await fn(payload, opts)
+        const response = await fn(payload, opts as FetchFnCtxWithRequest)
 
         if (!opts.__hasRequest) {
           // If we're on the server during SSR, we can skip to
