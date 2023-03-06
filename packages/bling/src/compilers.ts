@@ -110,9 +110,6 @@ export async function compileFile(opts: {
                           if (path.node.callee.name === 'fetch$') {
                             // Fetch RPCs
                             transformFetch$(path, state)
-                          } else if (path.node.callee.name === 'module$') {
-                            // Server-only expressions
-                            transformImport$(path, state)
                           } else if (path.node.callee.name === 'import$') {
                             // Server-only expressions
                             transformImport$(path, state)
@@ -271,9 +268,6 @@ export async function splitFile(opts: {
                           if (path.node.callee.name === 'fetch$') {
                             // Fetch RPCs
                             transformFetch$(path, state)
-                          } else if (path.node.callee.name === 'module$') {
-                            // Server-only expressions
-                            transformImport$(path, state)
                           } else if (path.node.callee.name === 'import$') {
                             // Server-only expressions
                             transformImport$(path, state)
