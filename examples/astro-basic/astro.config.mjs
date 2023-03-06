@@ -2,7 +2,6 @@ import { defineConfig } from 'astro/config'
 import react from '@astrojs/react'
 import node from '@astrojs/node'
 import { bling } from '@tanstack/bling/vite'
-import type { AstroIntegration } from 'astro'
 
 // https://astro.build/config
 
@@ -31,7 +30,7 @@ function astroBling() {
         config.vite.build.manifest = true
       },
     },
-  } satisfies AstroIntegration
+  }
 }
 
 export default defineConfig({
