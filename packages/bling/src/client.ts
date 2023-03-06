@@ -18,6 +18,8 @@ import type {
   FetchFnCtx,
   CreateSplitFn,
   CreateServerFn,
+  CreateImportFn,
+  FetchFnCtxWithRequest,
 } from './types'
 
 export * from './utils/utils'
@@ -32,7 +34,7 @@ export function addSerializer({ apply, serialize }: Serializer) {
 
 export type CreateClientFetcherFn = <T extends AnyFetchFn>(
   fn: T,
-  opts?: FetchFnCtxOptions,
+  opts?: FetchFnCtxWithRequest,
 ) => ClientFetcher<T>
 
 export type CreateClientFetcherMethods = {
@@ -74,15 +76,13 @@ const fetchMethods: CreateClientFetcherMethods = {
 
       const resolvedHref = resolveRequestHref(pathname, method, payloadInit)
 
-      const request = new Request(
-        resolvedHref,
-        mergeRequestInits(
-          baseInit,
-          payloadInit,
-          defaultOpts?.request,
-          opts?.request,
-        ),
+      const requestInit = mergeRequestInits(
+        baseInit,
+        payloadInit,
+        defaultOpts?.request,
+        opts?.request,
       )
+      const request = new Request(resolvedHref, requestInit)
 
       const response = await fetch(request)
 
@@ -108,6 +108,14 @@ const fetchMethods: CreateClientFetcherMethods = {
 export const fetch$: ClientFetchFn = Object.assign(fetchImpl, fetchMethods)
 
 export const split$: CreateSplitFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}
+
+export const import$: CreateImportFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}
+
+export const lazy$: CreateSplitFn = (_fn) => {
   throw new Error('Should be compiled away')
 }
 

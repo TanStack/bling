@@ -1,5 +1,6 @@
 import { fetch$, server$, lazy$, import$ } from '@tanstack/bling'
 import React, { Fragment, lazy, Suspense } from 'react'
+import { Link, Outlet, RouteObject, useLoaderData } from 'react-router-dom'
 
 const fetchHello = fetch$(() => console.log('Hello world'))
 
@@ -35,13 +36,11 @@ const LazyHello3 = lazy(() =>
 
 const inlineSecret = server$('I am an inline server secret!')
 
-export function App() {
+const App = lazy$(() => {
   console.log(
     'Do you know the inline server secret?',
     inlineSecret ?? 'Not even.',
   )
-
-  const [state, setState] = React.useState(0)
 
   return (
     <html>
@@ -50,20 +49,50 @@ export function App() {
       </head>
       <body>
         <div>Hello world</div>
-        <ServerHello />
-        <button onClick={() => setState((s) => s + 1)}>Click</button>
-        {state > 0 && (
-          <Suspense fallback={'loading'}>
-            <LazyHello />
-            <LazyHello2 />
-            <LazyHello3 />
-          </Suspense>
-        )}
+        <Link to="/hello">hello</Link>
+        <Link to="/">home</Link>
+        <Suspense>
+          <Outlet />
+        </Suspense>
         <Scripts />
       </body>
     </html>
   )
-}
+})
+
+const SomeRoute = lazy$(() => {
+  const [state, setState] = React.useState(0)
+
+  return (
+    <>
+      <ServerHello />
+      <button onClick={() => setState((s) => s + 1)}>Click</button>
+      {state > 0 && (
+        <Suspense fallback={'loading'}>
+          <LazyHello />
+          <LazyHello2 />
+          <LazyHello3 />
+        </Suspense>
+      )}
+    </>
+  )
+})
+
+const SomeRoute2 = lazy(() =>
+  import$({
+    default: () => {
+      const [state, setState] = React.useState(0)
+      const data = useLoaderData()
+      console.log(data)
+
+      return (
+        <>
+          <button onClick={() => setState((s) => s + 1)}>Click</button>
+        </>
+      )
+    },
+  }),
+)
 
 function Scripts() {
   return import.meta.env.DEV ? (
@@ -75,3 +104,28 @@ function Scripts() {
     <>{/* <script type="module" src={manifest['entry-client']}></script> */}</>
   )
 }
+
+export let routes = [
+  {
+    path: '/',
+    element: <App />,
+    children: [
+      {
+        index: true,
+        element: <SomeRoute />,
+      },
+      {
+        path: 'hello',
+        loader: fetch$((args, { request }) => {
+          console.log(inlineSecret)
+          return {
+            'got data': inlineSecret,
+            req: [...request.headers.entries()],
+          }
+        }),
+
+        element: <SomeRoute2 />,
+      },
+    ],
+  },
+] satisfies RouteObject[]

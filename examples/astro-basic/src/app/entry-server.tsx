@@ -1,19 +1,20 @@
-import { hasHandler, handleEvent } from "@tanstack/bling/server";
-import type { APIContext } from "astro";
-import * as ReactDOM from "react-dom/server";
-import { App } from "./root";
+import { hasHandler, handleFetch$ } from '@tanstack/bling/server'
+import type { APIContext } from 'astro'
+import * as ReactDOM from 'react-dom/server.browser'
+import { App } from './root'
+import { manifest } from './manifest'
 
-export const requestHandler = ({ request }: APIContext) => {
+export const requestHandler = async ({ request }: APIContext) => {
+  // manifest['entry-client'] = 1
   if (hasHandler(new URL(request.url).pathname)) {
-    return handleEvent({
+    return await handleFetch$({
       request,
-      __hasRequest: true,
-    });
+    })
   }
 
-  return new Response(ReactDOM.renderToString(<App />), {
+  return new Response(await ReactDOM.renderToReadableStream(<App />), {
     headers: {
-      "content-type": "text/html",
+      'content-type': 'text/html',
     },
-  });
-};
+  })
+}

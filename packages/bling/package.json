@@ -24,6 +24,7 @@
   "exports": {
     ".": "./dist/client.js",
     "./server": "./dist/server.js",
+    "./client": "./dist/client.js",
     "./vite": "./dist/vite.js",
     "./compilers": "./dist/compilers.js",
     "./package.json": "./package.json"
@@ -32,6 +33,9 @@
   "typesVersions": {
     "*": {
       ".": [
+        "./dist/client.d.ts"
+      ],
+      "client": [
         "./dist/client.d.ts"
       ],
       "server": [

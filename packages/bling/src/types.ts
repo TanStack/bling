@@ -11,7 +11,7 @@ export type Deserializer = {
   deserialize: (value: any, ctx: FetchFnCtx) => any
 }
 
-export type AnyFetchFn = (payload: any, ctx: FetchFnCtx) => any
+export type AnyFetchFn = (payload: any, ctx: FetchFnCtxWithRequest) => any
 
 export type FetchFnReturn<T extends AnyFetchFn> = Awaited<
   ReturnType<T>
@@ -21,7 +21,7 @@ export type FetchFnReturn<T extends AnyFetchFn> = Awaited<
 
 export type CreateFetcherFn = <T extends AnyFetchFn>(
   fn: T,
-  opts?: FetchFnCtx,
+  opts?: FetchFnCtxWithRequest,
 ) => Fetcher<T>
 
 export type FetcherFn<T extends AnyFetchFn> = (
@@ -64,8 +64,13 @@ export type NonFnProps<T> = {
 }
 
 export type AnySplitFn = (...args: any[]) => any
+export type ModuleObj = any
 
 export type CreateSplitFn = <T extends AnySplitFn>(fn: T) => SplitFn<T>
+
+export type CreateLazyFn = <T extends AnySplitFn>(fn: T) => T
+
+export type CreateImportFn = <T extends any>(fn: T) => Promise<T>
 
 export type SplitFn<T extends AnySplitFn> = (
   ...args: Parameters<T>

@@ -9,7 +9,6 @@ import type { AstroIntegration } from 'astro'
 function astroBling() {
   return {
     name: '',
-
     hooks: {
       'astro:config:setup': (config) => {
         config.updateConfig({
@@ -39,6 +38,12 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone',
   }),
-
+  vite: {
+    resolve: {
+      alias: {
+        'react-dom/server': 'react-dom/server.browser',
+      },
+    },
+  },
   integrations: [astroBling(), react()],
 })

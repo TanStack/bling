@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { compileServerFile, compileFile } from './compilers'
+import { compileServerFile, compileFile, splitFile } from './compilers'
 
 export const virtualModuleSplitPrefix = 'virtual:bling-split$-'
 export const virtualPrefix = '\0'
@@ -21,6 +21,10 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
           : transformOptions.ssr
 
       let ssr = process.env.TEST_ENV === 'client' ? false : !!isSsr
+
+      let [fileId, queryParam] = id.split('?')
+
+      let param = new URLSearchParams(queryParam)
 
       const url = pathToFileURL(id)
       url.searchParams.delete('v')
@@ -55,6 +59,19 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         return plugin[0].transform(code, id, transformOptions)
       }
 
+      if (param.has('split')) {
+        const compiled = await splitFile({
+          code,
+          viteCompile,
+          ssr,
+          id: fileId.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
+          splitIndex: Number(param.get('split')),
+          ref: param.get('ref') ?? 'fn',
+        })
+
+        return compiled.code
+      }
+
       if (url.pathname.includes('.server$.') && !ssr) {
         const compiled = compileServerFile({
           code,
@@ -77,19 +94,6 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         virtualModules = compiled.virtualModules
 
         return compiled.code
-      }
-    },
-    resolveId(id) {
-      if (id.startsWith(virtualModuleSplitPrefix)) {
-        return virtualPrefix + id
-      }
-    },
-    load(_id) {
-      if (_id.startsWith(virtualPrefix)) {
-        const id = _id
-          .replace(virtualPrefix, '')
-          .replace(virtualModuleSplitPrefix, '')
-        return virtualModules[id]
       }
     },
   }

@@ -156,11 +156,9 @@ export function mergeHeaders(...objs: (Headers | HeadersInit | undefined)[]) {
 }
 
 export function mergeRequestInits(...objs: (RequestInit | undefined)[]) {
-  return Object.assign.call(null, [
-    {},
-    ...objs,
-    { headers: mergeHeaders(...objs.map((o) => o && o.headers)) },
-  ])
+  return Object.assign({}, ...objs, {
+    headers: mergeHeaders(...objs.map((o) => o && o.headers)),
+  })
 }
 
 export async function parseResponse(response: Response) {

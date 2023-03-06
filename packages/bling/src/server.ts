@@ -24,6 +24,8 @@ import type {
   SplitFn,
   CreateSplitFn,
   CreateServerFn,
+  CreateImportFn,
+  CreateLazyFn,
 } from './types'
 
 export * from './utils/utils'
@@ -59,7 +61,10 @@ const serverMethods: ServerFetcherMethods = {
       const method = opts?.method || defaultOpts?.method || 'POST'
 
       console.log(`Executing server function: ${method}  ${pathname}`)
-      if (payload) console.log(`  Fn Payload: ${payload}`)
+      if (payload) {
+        console.log(`  Fn Payload:`)
+        console.log(payload)
+      }
 
       opts = opts ?? {}
 
@@ -121,7 +126,7 @@ const serverMethods: ServerFetcherMethods = {
 
 export const fetch$: FetchFn = Object.assign(serverImpl, serverMethods)
 
-export async function handleEvent(
+export async function handleFetch$(
   _ctx: Omit<FetchFnCtxWithRequest, '__hasRequest'>,
 ) {
   if (!_ctx.request) {
@@ -184,7 +189,7 @@ async function parseRequest(event: FetchFnCtxWithRequest) {
           return value
         })
       } catch (e) {
-        throw new Error(`Error parsing request body: ${text}`)
+        throw new Error(`Error parsing request body: ${text}\n ${e}`)
       }
     } else if (contentType.includes('form')) {
       let formData = await request.clone().formData()
@@ -295,6 +300,14 @@ export const split$: CreateSplitFn = (_fn) => {
   throw new Error('Should be compiled away')
 }
 
+export const lazy$: CreateLazyFn = (_fn) => {
+  throw new Error('Should be compiled away')
+}
+
 export const server$: CreateServerFn = (_value) => {
+  throw new Error('Should be compiled away')
+}
+
+export const import$: CreateImportFn = (_fn) => {
   throw new Error('Should be compiled away')
 }

@@ -26,6 +26,7 @@ interface State {
     minify: boolean
     root: string
   }
+  imported: { [key: string]: boolean }
   refs: Set<any>
   serverIndex: number
   splitIndex: number
@@ -98,6 +99,7 @@ export async function compileFile(opts: {
                   state.splitModulesById = {}
                   state.serverIndex = 0
                   state.splitIndex = 0
+                  state.imported = {}
 
                   trackProgram(path, state)
 
@@ -108,12 +110,21 @@ export async function compileFile(opts: {
                           if (path.node.callee.name === 'fetch$') {
                             // Fetch RPCs
                             transformFetch$(path, state)
+                          } else if (path.node.callee.name === 'module$') {
+                            // Server-only expressions
+                            transformImport$(path, state)
+                          } else if (path.node.callee.name === 'import$') {
+                            // Server-only expressions
+                            transformImport$(path, state)
                           } else if (path.node.callee.name === 'split$') {
                             // Code splitting
                             transformSplit$(path, state)
                           } else if (path.node.callee.name === 'server$') {
                             // Server-only expressions
                             transformServer$(path, state)
+                          } else if (path.node.callee.name === 'lazy$') {
+                            // Server-only expressions
+                            transformLazy$(path, state)
                           }
                         }
                       },
@@ -171,6 +182,15 @@ export async function compileFile(opts: {
                   ExportNamedDeclaration: (path) => {
                     path.replaceWith(path.node.declaration!)
                   },
+                  CallExpression: (path) => {
+                    // if called with `__astro_tag_component__`
+                    if (
+                      path.node.callee.type === 'Identifier' &&
+                      path.node.callee.name === '__astro_tag_component__'
+                    ) {
+                      path.remove()
+                    }
+                  },
                 },
                 state as State,
               )
@@ -213,6 +233,156 @@ export async function compileFile(opts: {
     virtualModules,
   }
 }
+
+export async function splitFile(opts: {
+  code: string
+  viteCompile: (code: string, id: string, cb: any) => Promise<string>
+  id: string
+  ref: string
+  ssr: boolean
+  splitIndex: number
+}) {
+  let splitModulesById: SplitModulesById = {}
+
+  const compiledCode = await opts.viteCompile(
+    opts.code,
+    opts.id,
+    (source: any, id: any) => ({
+      plugins: [
+        [
+          {
+            visitor: {
+              Program: {
+                enter(path: traverse.NodePath<t.Program>, state: State) {
+                  state.splitModulesById = {}
+                  state.serverIndex = 0
+                  state.splitIndex = 0
+                  state.imported = {}
+
+                  // we track all the variables that are referenced in the file somewhere apart from
+                  // declaration
+                  trackProgram(path, state)
+
+                  // we transform everything, thus probably removing some references
+                  path.traverse(
+                    {
+                      CallExpression: (path) => {
+                        if (path.node.callee.type === 'Identifier') {
+                          if (path.node.callee.name === 'fetch$') {
+                            // Fetch RPCs
+                            transformFetch$(path, state)
+                          } else if (path.node.callee.name === 'module$') {
+                            // Server-only expressions
+                            transformImport$(path, state)
+                          } else if (path.node.callee.name === 'import$') {
+                            // Server-only expressions
+                            transformImport$(path, state)
+                          } else if (path.node.callee.name === 'split$') {
+                            // Code splitting
+                            transformSplit$(path, state)
+                          } else if (path.node.callee.name === 'server$') {
+                            // Server-only expressions
+                            transformServer$(path, state)
+                          } else if (path.node.callee.name === 'lazy$') {
+                            // Server-only expressions
+                            transformLazy$(path, state)
+                          }
+                        }
+                      },
+                      ImportDeclaration: function (path, state) {
+                        // Rewrite imports to `@tanstack/bling` to `@tanstack/bling/server` during SSR
+                        if (
+                          state.opts.ssr &&
+                          path.node.source.value === '@tanstack/bling'
+                        ) {
+                          path.node.source = t.stringLiteral(
+                            '@tanstack/bling/server',
+                          )
+                        }
+                      },
+                    },
+                    state,
+                  )
+
+                  splitModulesById = { ...state.splitModulesById }
+
+                  // recompute scope/refs
+                  path.scope.crawl()
+                },
+                exit(path: traverse.NodePath<t.Program>, state: State) {
+                  state.splitModulesById = {}
+                  state.serverIndex = 0
+                  state.splitIndex = 0
+
+                  // while exiting, we want to see what variables are still
+                  // referenced, including the ones before the initial transform
+                  // but now we will also analyze the code generated by our transforms
+                  // for any new references
+                  let prevRefs = [...state.refs.values()]
+                  trackProgram(path, state)
+                  prevRefs.forEach((r) => {
+                    state.refs.add(r)
+                  })
+
+                  // Remove default exports and do not export named exports
+                  // (but keep the variable declarations)
+                  // again might be removing some references
+                  path.traverse(
+                    {
+                      ExportDefaultDeclaration: (path) => {
+                        path.remove()
+                      },
+                      ExportNamedDeclaration: (path) => {
+                        path.replaceWith(path.node.declaration!)
+                      },
+                      CallExpression: (path) => {
+                        // if called with `__astro_tag_component__`
+                        if (
+                          path.node.callee.type === 'Identifier' &&
+                          path.node.callee.name === '__astro_tag_component__'
+                        ) {
+                          path.remove()
+                        }
+                      },
+                    },
+                    state as State,
+                  )
+
+                  let splitModule =
+                    splitModulesById[
+                      `${opts.id}?split=${opts.splitIndex}&ref=${opts.ref}`
+                    ]
+
+                  const fnCode = new CodeGenerator(splitModule.node).generate()
+                    .code
+
+                  path.node.body.push(
+                    template.smart(`
+                    export default ${fnCode}
+                  `)() as t.Statement,
+                  )
+
+                  // now tree shake everything that was every referened and isnt now
+                  treeShake(path, state)
+                },
+              },
+            },
+          },
+          {
+            ssr: opts.ssr,
+            root: process.cwd(),
+            minify: process.env.NODE_ENV === 'production',
+          },
+        ],
+      ].filter(Boolean),
+    }),
+  )
+
+  return {
+    code: compiledCode,
+  }
+}
+
 function transformFetch$(path: babel.NodePath<t.CallExpression>, state: State) {
   const fetchFn = path.get('arguments')[0]
   const fetchFnOpts = path.get('arguments')[1]
@@ -370,6 +540,60 @@ function transformSplit$(path: babel.NodePath<t.CallExpression>, state: State) {
   path.replaceWith(t.identifier(`$$split${splitIndex}`))
 }
 
+function transformImport$(
+  path: babel.NodePath<t.CallExpression>,
+  state: State,
+) {
+  const fn = path.node.arguments[0]
+  let program = path.findParent((p) => t.isProgram(p))
+  let statement = path.findParent((p) => {
+    const body = program!.get('body') as babel.NodePath<babel.types.Node>[]
+
+    return body.includes(p)
+  })!
+
+  const splitIndex = state.splitIndex++
+  let hasher = state.opts.minify ? hashFn : (str: string) => str
+  const fName = state.filename.replace(state.opts.root, '').slice(1)
+  const hash = hasher(nodePath.join(fName, String(splitIndex)))
+
+  let decl = path.findParent(
+    (p) =>
+      p.isVariableDeclarator() ||
+      p.isFunctionDeclaration() ||
+      p.isObjectProperty(),
+  ) as babel.NodePath<any>
+
+  const declId =
+    decl?.node.id?.elements?.[0]?.name ??
+    decl?.node.id?.name ??
+    decl?.node.key?.name ??
+    'fn'
+
+  let id = `${state.filename}?split=${splitIndex}&ref=${declId}`
+
+  // We use the same file name as the original, so that vite can
+  // resolve and load it as usual and then we only need to worry
+  // about transforming it. The ?split=0 will make sure its actually
+  // considered a different module than the original file
+  state.splitModulesById[id] = {
+    id: id,
+    node: fn as t.FunctionExpression,
+  }
+
+  if (state.opts.ssr) {
+    path.replaceWith(fn)
+  }
+
+  path.replaceWith(
+    (
+      template.smart(` import('$PATHNAME').then((m) => m.default);`)({
+        $PATHNAME: id,
+      }) as t.ExpressionStatement
+    ).expression,
+  )
+}
+
 function transformServer$(
   path: babel.NodePath<t.CallExpression>,
   state: State,
@@ -381,6 +605,42 @@ function transformServer$(
   } else {
     path.replaceWith(t.identifier('undefined'))
   }
+}
+
+function transformLazy$(path: babel.NodePath<t.CallExpression>, state: State) {
+  const expression = path.node.arguments[0] as t.Expression
+
+  let program = path.findParent((p) => t.isProgram(p))
+  let statement = path.findParent((p) => {
+    const body = program!.get('body') as babel.NodePath<babel.types.Node>[]
+
+    return body.includes(p)
+  })!
+
+  if (!state.imported['$$lazy']) {
+    statement.insertBefore(
+      template.smart(`import { lazy as $$lazy } from 'react'`)(),
+    )
+    state.imported['$$lazy'] = true
+  }
+
+  // if (state.opts.ssr) {
+  path.replaceWith(
+    t.callExpression(t.identifier('$$lazy'), [
+      t.arrowFunctionExpression(
+        [],
+        t.objectExpression([
+          t.objectProperty(
+            t.identifier('default'),
+            t.awaitExpression(
+              t.callExpression(t.identifier('module$'), [expression]),
+            ),
+          ),
+        ]),
+        true,
+      ),
+    ]),
+  )
 }
 
 function trackProgram(path: babel.NodePath, state: State) {
@@ -452,14 +712,13 @@ function treeShake(path: babel.NodePath, state: State) {
 
   let count = 0
 
+  function shouldRemove(node: babel.NodePath<t.Node>) {
+    return refs.has(node) && !isIdentifierReferenced(node)
+  }
+
   function sweepFunction(sweepPath: babel.NodePath<t.Function>) {
     const ident = getIdentifier(sweepPath) as babel.NodePath<t.Identifier>
-    if (
-      ident &&
-      ident.node &&
-      refs.has(ident) &&
-      !isIdentifierReferenced(ident)
-    ) {
+    if (ident && ident.node && shouldRemove(ident)) {
       ++count
       if (
         t.isAssignmentExpression(sweepPath.parentPath) ||
@@ -478,7 +737,7 @@ function treeShake(path: babel.NodePath, state: State) {
     >,
   ) {
     const local = sweepPath.get('local')
-    if (refs.has(local) && !isIdentifierReferenced(local)) {
+    if (shouldRemove(local)) {
       ++count
       sweepPath.remove()
       if (!state.opts.ssr) {
@@ -497,7 +756,7 @@ function treeShake(path: babel.NodePath, state: State) {
       VariableDeclarator(variablePath) {
         if (variablePath.node.id.type === 'Identifier') {
           const local = variablePath.get('id')
-          if (refs.has(local) && !isIdentifierReferenced(local)) {
+          if (shouldRemove(local)) {
             ++count
             variablePath.remove()
           }
@@ -516,7 +775,7 @@ function treeShake(path: babel.NodePath, state: State) {
                   })(),
             ) as babel.NodePath
 
-            if (refs.has(local) && !isIdentifierReferenced(local)) {
+            if (shouldRemove(local)) {
               ++count
               p.remove()
             }
@@ -541,7 +800,7 @@ function treeShake(path: babel.NodePath, state: State) {
             } else {
               return
             }
-            if (refs.has(local) && !isIdentifierReferenced(local)) {
+            if (shouldRemove(local)) {
               ++count
               e.remove()
             }
