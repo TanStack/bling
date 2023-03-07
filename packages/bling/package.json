@@ -12,11 +12,12 @@
     "*"
   ],
   "scripts": {
-    "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:server --watch\" \"pnpm build:vite --watch\" \"pnpm build:compilers --watch\" \"pnpm build:client --watch\"",
-    "build": "pnpm build:types && pnpm build:server && pnpm build:vite && pnpm build:compilers && pnpm build:client",
+    "dev": "concurrently --kill-others \"pnpm build:types --watch\" \"pnpm build:server --watch\" \"pnpm build:vite --watch\" \"pnpm build:compilers --watch\" \"pnpm build:client --watch\" \"pnpm build:astro --watch\"",
+    "build": "pnpm build:types && pnpm build:server && pnpm build:vite && pnpm build:astro && pnpm build:compilers && pnpm build:client",
     "build:types": "tsc --emitDeclarationOnly --declaration --skipLibCheck",
     "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/server.js",
     "build:vite": "esbuild src/vite.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/vite.js",
+    "build:astro": "esbuild src/astro.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/astro.js",
     "build:compilers": "esbuild src/compilers.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/compilers.js",
     "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js",
     "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write"
@@ -26,6 +27,7 @@
     "./server": "./dist/server.js",
     "./client": "./dist/client.js",
     "./vite": "./dist/vite.js",
+    "./astro": "./dist/astro.js",
     "./compilers": "./dist/compilers.js",
     "./package.json": "./package.json"
   },
@@ -44,27 +46,30 @@
       "vite": [
         "./dist/vite.d.ts"
       ],
+      "astro": [
+        "./dist/astro.d.ts"
+      ],
       "compilers": [
         "./dist/compilers.d.ts"
       ]
     }
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^3.1.0",
     "@babel/generator": "^7.21.1",
     "@babel/template": "^7.20.7",
     "@babel/traverse": "^7.21.2",
     "@babel/types": "^7.21.2",
-    "esbuild-plugin-replace": "^1.3.0",
-    "esbuild": "^0.16.17"
+    "@vitejs/plugin-react": "^3.1.0",
+    "esbuild": "^0.16.17",
+    "esbuild-plugin-replace": "^1.3.0"
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.0",
     "@types/babel__generator": "^7.6.4",
     "@types/babel__template": "^7.4.1",
     "@types/babel__traverse": "^7.18.3",
+    "astro": "0.0.0-ssr-manifest-20230306183729",
     "concurrently": "^7.6.0",
-    "core": "link:@types/@babel/core",
     "typescript": "4.9.4",
     "vitest": "^0.26.2"
   }

@@ -1,5 +1,6 @@
 import { fetch$, server$, lazy$, import$ } from '@tanstack/bling'
-import React, { Fragment, lazy, Suspense } from 'react'
+import React, { Fragment, lazy, Suspense, useContext } from 'react'
+import { manifestContext } from './manifest'
 
 const fetchHello = fetch$(() => console.log('Hello world'))
 
@@ -66,12 +67,15 @@ export function App() {
 }
 
 function Scripts() {
+  const manifest = useContext(manifestContext)
   return import.meta.env.DEV ? (
     <>
       <script type="module" src="/@vite/client"></script>
       <script type="module" src="/src/app/entry-client.tsx"></script>
     </>
   ) : (
-    <>{/* <script type="module" src={manifest['entry-client']}></script> */}</>
+    <>
+      <script type="module" src={manifest['entry-client']}></script>
+    </>
   )
 }
