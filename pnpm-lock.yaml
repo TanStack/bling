@@ -31,14 +31,13 @@ importers:
       type-fest: 3.6.0
       vite: 4.1.4_@types+node@18.14.0
 
-  examples/astro-basic:
+  examples/astro-react:
     specifiers:
       '@astrojs/netlify': ^1.2.1
       '@astrojs/node': ^5.0.3
       '@astrojs/react': ^1.2.2
       '@babel/generator': ^7.21.1
       '@tanstack/bling': workspace:*
-      '@tanstack/bling-app': workspace:^0.4.0
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
       '@vitejs/plugin-react': ^3.1.0
@@ -52,7 +51,6 @@ importers:
       '@astrojs/react': 1.2.2_3xleytyzprlgycb2ded54tx72i
       '@babel/generator': 7.21.1
       '@tanstack/bling': link:../../packages/bling
-      '@tanstack/bling-app': link:../../packages/bling-app
       '@vitejs/plugin-react': 3.1.0
       astro: 0.0.0-ssr-manifest-20230306183729
       concurrently: 7.6.0
@@ -108,15 +106,16 @@ importers:
       '@types/react': ^18.0.28
       '@types/react-dom': ^18.0.11
       '@vitejs/plugin-react': ^3.1.0
-      astro: ^2.0.18
+      astro: 0.0.0-ssr-manifest-20230306183729
       concurrently: ^7.6.0
       prisma: ^4.11.0
       react: ^18.2.0
       react-dom: ^18.2.0
       react-router-dom: ^6.8.2
+      tiny-invariant: ^1.3.1
     dependencies:
       '@astrojs/netlify': 1.3.0
-      '@astrojs/node': 5.0.4_astro@2.0.18
+      '@astrojs/node': 5.0.4_o2uykwexbyspl4kddtaamk4jxi
       '@astrojs/react': 1.2.2_3xleytyzprlgycb2ded54tx72i
       '@babel/generator': 7.21.1
       '@prisma/client': 4.11.0_prisma@4.11.0
@@ -124,11 +123,12 @@ importers:
       '@tanstack/bling': link:../../packages/bling
       '@tanstack/react-query': 4.26.1_biqbaboplfbrettd7655fr4n2y
       '@vitejs/plugin-react': 3.1.0
-      astro: 2.0.18
+      astro: 0.0.0-ssr-manifest-20230306183729
       concurrently: 7.6.0
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       react-router-dom: 6.8.2_biqbaboplfbrettd7655fr4n2y
+      tiny-invariant: 1.3.1
     devDependencies:
       '@types/react': 18.0.28
       '@types/react-dom': 18.0.11
@@ -169,41 +169,6 @@ importers:
       typescript: 4.9.4
       vitest: 0.26.3
 
-  packages/bling-app:
-    specifiers:
-      '@babel/generator': ^7.21.1
-      '@babel/template': ^7.20.7
-      '@babel/traverse': ^7.21.2
-      '@babel/types': ^7.21.2
-      '@tanstack/bling': ^0.1.3
-      '@types/babel__core': ^7.20.0
-      '@types/babel__generator': ^7.6.4
-      '@types/babel__template': ^7.4.1
-      '@types/babel__traverse': ^7.18.3
-      '@vitejs/plugin-react': ^3.1.0
-      concurrently: ^7.6.0
-      esbuild: ^0.16.17
-      esbuild-plugin-replace: ^1.3.0
-      typescript: 4.9.4
-      vitest: ^0.26.2
-    dependencies:
-      '@babel/generator': 7.21.1
-      '@babel/template': 7.20.7
-      '@babel/traverse': 7.21.2
-      '@babel/types': 7.21.2
-      '@tanstack/bling': 0.1.5
-      '@vitejs/plugin-react': 3.1.0
-      esbuild: 0.16.17
-      esbuild-plugin-replace: 1.3.0
-    devDependencies:
-      '@types/babel__core': 7.20.0
-      '@types/babel__generator': 7.6.4
-      '@types/babel__template': 7.4.1
-      '@types/babel__traverse': 7.18.3
-      concurrently: 7.6.0
-      typescript: 4.9.4
-      vitest: 0.26.3
-
 packages:
 
   /@ampproject/remapping/2.2.0:
@@ -236,29 +201,6 @@ packages:
       vscode-languageserver-types: 3.17.3
       vscode-uri: 3.0.7
 
-  /@astrojs/markdown-remark/2.0.1_astro@2.0.18:
-    resolution: {integrity: sha512-xQF1rXGJN18m+zZucwRRtmNehuhPMMhZhi6HWKrtpEAKnHSPk8lqf1GXgKH7/Sypglu8ivdECZ+EGs6kOYVasQ==}
-    peerDependencies:
-      astro: ^2.0.2
-    dependencies:
-      '@astrojs/prism': 2.0.0
-      astro: 2.0.18
-      github-slugger: 1.5.0
-      import-meta-resolve: 2.2.1
-      rehype-raw: 6.1.1
-      rehype-stringify: 9.0.3
-      remark-gfm: 3.0.1
-      remark-parse: 10.0.1
-      remark-rehype: 10.1.0
-      remark-smartypants: 2.0.0
-      shiki: 0.11.1
-      unified: 10.1.2
-      unist-util-visit: 4.1.2
-      vfile: 5.3.7
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-
   /@astrojs/markdown-remark/2.0.1_o2uykwexbyspl4kddtaamk4jxi:
     resolution: {integrity: sha512-xQF1rXGJN18m+zZucwRRtmNehuhPMMhZhi6HWKrtpEAKnHSPk8lqf1GXgKH7/Sypglu8ivdECZ+EGs6kOYVasQ==}
     peerDependencies:
@@ -286,19 +228,6 @@ packages:
     dependencies:
       '@astrojs/webapi': 1.1.1
       esbuild: 0.15.18
-    dev: false
-
-  /@astrojs/node/5.0.4_astro@2.0.18:
-    resolution: {integrity: sha512-pBD0cpQM4fDzwBBxyX7r7jTsYo/oXbUwAvHRB0OQGXsWjYvqqa8KQvNwQwYXXpNxCwgtpVtkdg4tV4mv1hSpWQ==}
-    peerDependencies:
-      astro: ^2.0.15
-    dependencies:
-      '@astrojs/webapi': 2.0.2
-      astro: 2.0.18
-      send: 0.18.0
-      server-destroy: 1.0.1
-    transitivePeerDependencies:
-      - supports-color
     dev: false
 
   /@astrojs/node/5.0.4_o2uykwexbyspl4kddtaamk4jxi:
@@ -933,16 +862,6 @@ packages:
     engines: {node: '>=14'}
     dev: false
 
-  /@tanstack/bling/0.1.5:
-    resolution: {integrity: sha512-T1flc0AitbMVJgHswMT7uniEf9lmKthzyqQW53/mIJFZqhM1LkL62BfcWIrQ4H74+K/THcmyIc22YdbadaDmWg==}
-    dependencies:
-      '@tanstack/bling': link:packages/bling
-      '@vitejs/plugin-react': 3.1.0
-    transitivePeerDependencies:
-      - supports-color
-      - vite
-    dev: false
-
   /@tanstack/query-core/4.26.1:
     resolution: {integrity: sha512-Zrx2pVQUP4ndnsu6+K/m8zerXSVY8QM+YSbxA1/jbBY21GeCd5oKfYl92oXPK0hPEUtoNuunIdiq0ZMqLos+Zg==}
     dev: false
@@ -1259,73 +1178,6 @@ packages:
       - sugarss
       - supports-color
       - terser
-
-  /astro/2.0.18:
-    resolution: {integrity: sha512-Jfi58oISn4uOvROek+u3WESDpCbruV80L4ds/5jq0SC4texfynSkbato2jAwMKj7MvROHP+/LmnKzfH1wNrBuA==}
-    engines: {node: '>=16.12.0', npm: '>=6.14.0'}
-    hasBin: true
-    dependencies:
-      '@astrojs/compiler': 1.2.0
-      '@astrojs/language-server': 0.28.3
-      '@astrojs/markdown-remark': 2.0.1_astro@2.0.18
-      '@astrojs/telemetry': 2.0.1
-      '@astrojs/webapi': 2.0.3
-      '@babel/core': 7.21.0
-      '@babel/generator': 7.21.1
-      '@babel/parser': 7.21.2
-      '@babel/plugin-transform-react-jsx': 7.21.0_@babel+core@7.21.0
-      '@babel/traverse': 7.21.2
-      '@babel/types': 7.21.2
-      '@types/babel__core': 7.20.0
-      '@types/yargs-parser': 21.0.0
-      acorn: 8.8.2
-      boxen: 6.2.1
-      ci-info: 3.8.0
-      common-ancestor-path: 1.0.1
-      cookie: 0.5.0
-      debug: 4.3.4
-      deepmerge-ts: 4.3.0
-      devalue: 4.3.0
-      diff: 5.1.0
-      es-module-lexer: 1.2.0
-      estree-walker: 3.0.3
-      execa: 6.1.0
-      fast-glob: 3.2.12
-      github-slugger: 2.0.0
-      gray-matter: 4.0.3
-      html-escaper: 3.0.3
-      kleur: 4.1.5
-      magic-string: 0.27.0
-      mime: 3.0.0
-      ora: 6.1.2
-      path-to-regexp: 6.2.1
-      preferred-pm: 3.0.3
-      prompts: 2.4.2
-      rehype: 12.0.1
-      semver: 7.3.8
-      server-destroy: 1.0.1
-      shiki: 0.11.1
-      slash: 4.0.0
-      string-width: 5.1.2
-      strip-ansi: 7.0.1
-      supports-esm: 1.0.0
-      tsconfig-resolver: 3.0.1
-      typescript: 4.9.4
-      unist-util-visit: 4.1.2
-      vfile: 5.3.7
-      vite: 4.1.4
-      vitefu: 0.2.4_vite@4.1.4
-      yargs-parser: 21.1.1
-      zod: 3.20.6
-    transitivePeerDependencies:
-      - '@types/node'
-      - less
-      - sass
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-    dev: false
 
   /asynckit/0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
@@ -4083,6 +3935,10 @@ packages:
     dependencies:
       globalyzer: 0.1.0
       globrex: 0.1.2
+
+  /tiny-invariant/1.3.1:
+    resolution: {integrity: sha512-AD5ih2NlSssTCwsMznbvwMZpJ1cbhkGd2uueNxzv2jDlEeZdU04JQfRnggJQ8DrcVBGjAsCKwFBbDlVNtEMlzw==}
+    dev: false
 
   /tinybench/2.3.1:
     resolution: {integrity: sha512-hGYWYBMPr7p4g5IarQE7XhlyWveh1EKhy4wUBS1LrHXCKYgvz+4/jCqgmJqZxxldesn05vccrtME2RLLZNW7iA==}

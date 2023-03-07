@@ -97,7 +97,7 @@ const fetchMethods: CreateClientFetcherMethods = {
     const fetcherMethods: ClientFetcherMethods<any> = {
       url: pathname,
       fetch: (request: RequestInit, opts?: FetchFnCtxOptions) => {
-        return fetcherImpl(undefined, mergeFetchOpts({ request }, opts))
+        return fetcherImpl({}, mergeFetchOpts({ request }, opts) as any)
       },
     }
 

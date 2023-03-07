@@ -20,11 +20,12 @@
     "@tanstack/bling": "^0.1.3",
     "@tanstack/react-query": "^4.26.0",
     "@vitejs/plugin-react": "^3.1.0",
-    "astro": "^2.0.18",
+    "astro": "0.0.0-ssr-manifest-20230306183729",
     "concurrently": "^7.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.2"
+    "react-router-dom": "^6.8.2",
+    "tiny-invariant": "^1.3.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

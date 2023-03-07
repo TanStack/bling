@@ -12,11 +12,7 @@ addSerializer({
 let router = createBrowserRouter(routes)
 
 function Client() {
-  return (
-    <QueryClientProvider>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  )
+  return <RouterProvider router={router} />
 }
 
 ReactDOM.hydrateRoot(document, <Client />)

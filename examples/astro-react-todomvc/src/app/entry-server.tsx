@@ -11,6 +11,8 @@ import {
   StaticRouterProvider,
 } from 'react-router-dom/server'
 import { routes } from './root'
+import { manifestContext } from './manifest'
+import { manifest } from 'astro:ssr-manifest'
 
 addDeserializer({
   apply: (req) => req === '$request',
@@ -36,11 +38,13 @@ export const requestHandler = async ({ request }: APIContext) => {
 
   return new Response(
     await ReactDOM.renderToReadableStream(
-      <StaticRouterProvider
-        router={router}
-        context={context}
-        nonce="the-nonce"
-      />,
+      <manifestContext.Provider value={manifest}>
+        <StaticRouterProvider
+          router={router}
+          context={context}
+          nonce="the-nonce"
+        />
+      </manifestContext.Provider>,
     ),
     {
       headers: {

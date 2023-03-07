@@ -7,6 +7,7 @@ import {
   FetcherMethods,
   FetchFnCtx,
   FetchFnCtxOptions,
+  FetchFnCtxWithRequest,
 } from '../types'
 
 export const XBlingStatusCodeHeader = 'x-bling-status-code'
@@ -201,14 +202,15 @@ export async function parseResponse(response: Response) {
   return response
 }
 
-export function mergeFetchOpts(...objs: (FetchFnCtxOptions | undefined)[]) {
-  return Object.assign.call(null, [
-    {},
+export function mergeFetchOpts(
+  ...objs: (FetchFnCtxOptions | undefined)[]
+): FetchFnCtxWithRequest {
+  return Object.assign({}, [
     ...objs,
     {
       request: mergeRequestInits(...objs.map((o) => o && o.request)),
     },
-  ])
+  ]) as any
 }
 
 export function payloadRequestInit(
@@ -248,7 +250,7 @@ export function createFetcher<T extends AnyFetchFn>(
   const fetcherMethods: FetcherMethods<T> = {
     url: route,
     fetch: (request: RequestInit, ctx?: FetchFnCtxOptions) => {
-      return fetcherImpl(undefined, mergeFetchOpts({ request }, ctx))
+      return fetcherImpl({} as any, mergeFetchOpts({ request }, ctx))
     },
   }
 
