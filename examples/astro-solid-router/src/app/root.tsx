@@ -2,6 +2,8 @@ import { fetch$, server$, import$ } from '@tanstack/bling'
 import { createSignal, lazy, Suspense, useContext } from 'solid-js'
 import { HydrationScript, NoHydration } from 'solid-js/web'
 import { manifestContext } from './manifest'
+import { Link, Outlet, RouteDefinition } from '@solidjs/router'
+
 const fetchHello = fetch$(() => console.log('Hello world'))
 
 const LazyHello3 = lazy(() =>
@@ -33,10 +35,12 @@ export function App() {
       </head>
       <body>
         <div>Hello world</div>
-        <button onClick={() => setState((s) => s + 1)}>{state}</button>
+        <Link href="/">Home</Link>
+        <Link href="/about">About</Link>
         <Suspense fallback={'loading'}>
-          <LazyHello3 />
+          <Outlet />
         </Suspense>
+        <button onClick={() => setState((s) => s + 1)}>{state}</button>
         <Scripts />
       </body>
     </html>
@@ -70,3 +74,30 @@ function Scripts() {
   )
 }
 
+export const routes = [
+  {
+    path: '/',
+    component: App,
+    children: [
+      {
+        path: '',
+        component: lazy(() => import$({ default: () => <div>Home</div> })),
+      },
+      {
+        path: 'about',
+        component: lazy(() =>
+          import$({
+            default: () => (
+              <div>
+                About{' '}
+                <Suspense fallback={'loading'}>
+                  <LazyHello3 />
+                </Suspense>
+              </div>
+            ),
+          }),
+        ),
+      },
+    ],
+  },
+] satisfies RouteDefinition[]

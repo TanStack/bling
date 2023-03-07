@@ -154,6 +154,28 @@ importers:
       concurrently: 7.6.0
       solid-js: 1.6.12
 
+  examples/astro-solid-router:
+    specifiers:
+      '@astrojs/netlify': ^1.2.1
+      '@astrojs/node': ^5.0.3
+      '@astrojs/solid-js': ^1.2.3
+      '@babel/generator': ^7.21.1
+      '@solidjs/router': ^0.7.0
+      '@tanstack/bling': workspace:*
+      astro: 0.0.0-ssr-manifest-20230306183729
+      concurrently: ^7.6.0
+      solid-js: ^1.4.3
+    dependencies:
+      '@astrojs/netlify': 1.3.0
+      '@astrojs/node': 5.0.4_o2uykwexbyspl4kddtaamk4jxi
+      '@astrojs/solid-js': 1.2.3_solid-js@1.6.12
+      '@babel/generator': 7.21.1
+      '@solidjs/router': 0.7.0_solid-js@1.6.12
+      '@tanstack/bling': link:../../packages/bling
+      astro: 0.0.0-ssr-manifest-20230306183729
+      concurrently: 7.6.0
+      solid-js: 1.6.12
+
   packages/bling:
     specifiers:
       '@babel/generator': ^7.21.1
@@ -903,6 +925,14 @@ packages:
   /@remix-run/router/1.3.3:
     resolution: {integrity: sha512-YRHie1yQEj0kqqCTCJEfHqYSSNlZQ696QJG+MMiW4mxSl9I0ojz/eRhJS4fs88Z5i6D1SmoF9d3K99/QOhI8/w==}
     engines: {node: '>=14'}
+    dev: false
+
+  /@solidjs/router/0.7.0_solid-js@1.6.12:
+    resolution: {integrity: sha512-8HI84twe5FjYRebSLMAhtkL9bRuTDIlxJK56kjfjU9WKGoUCTaWpCnkuj8Hqde1bWZ0X+GOZxKDfNkn1CjtjxA==}
+    peerDependencies:
+      solid-js: ^1.5.3
+    dependencies:
+      solid-js: 1.6.12
     dev: false
 
   /@tanstack/query-core/4.26.1:
