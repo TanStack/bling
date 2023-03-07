@@ -48,9 +48,9 @@ function Scripts() {
   const manifest = useContext(manifestContext)
   return (
     <NoHydration>
+      <HydrationScript />
       {import.meta.env.DEV ? (
         <>
-          <HydrationScript />
           <script type="module" src="/@vite/client" $ServerOnly></script>
           <script
             type="module"
