@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { compileServerFile, compileFile, splitFile } from './compilers'
+import { compileSecretFile, compileFile, splitFile } from './compilers'
 
 export const virtualModuleSplitPrefix = 'virtual:bling-split$-'
 export const virtualPrefix = '\0'
@@ -72,8 +72,8 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         return compiled.code
       }
 
-      if (url.pathname.includes('.server$.') && !ssr) {
-        const compiled = compileServerFile({
+      if (url.pathname.includes('.secret$.') && !ssr) {
+        const compiled = compileSecretFile({
           code,
         })
 

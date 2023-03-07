@@ -1,5 +1,5 @@
 import type { Todo } from '@prisma/client'
-import { fetch$, json } from '@tanstack/bling'
+import { server$, json } from '@tanstack/bling'
 import { useContext, useRef } from 'react'
 import {
   ActionFunctionArgs,
@@ -10,7 +10,7 @@ import {
   useSubmit,
 } from 'react-router-dom'
 import '../app.css'
-import { prisma } from './db.server$'
+import { prisma } from './db.secret$'
 import invariant from 'tiny-invariant'
 import { manifestContext } from './manifest'
 
@@ -288,7 +288,7 @@ async function action({ request, params, context }: ActionFunctionArgs) {
   // debugger
   let entry = await request.formData()
 
-  return await fetch$(async (formData, ctx) => {
+  return await server$(async (formData, ctx) => {
     const intent = formData.get('intent')
 
     if (hasKey(generalActions, intent)) {
@@ -312,7 +312,7 @@ async function action({ request, params, context }: ActionFunctionArgs) {
 export let routes = [
   {
     path: '/',
-    loader: fetch$(async (args) => {
+    loader: server$(async (args) => {
       return await prisma.todo.findMany()
     }),
     action,
@@ -320,7 +320,7 @@ export let routes = [
   },
   {
     path: '/active',
-    loader: fetch$(async (args) => {
+    loader: server$(async (args) => {
       return await prisma.todo.findMany({
         where: {
           complete: false,
@@ -332,7 +332,7 @@ export let routes = [
   },
   {
     path: '/completed',
-    loader: fetch$(async (args) => {
+    loader: server$(async (args) => {
       return await prisma.todo.findMany({
         where: {
           complete: true,

@@ -35,7 +35,7 @@ interface State {
 
 const INLINE_SERVER_ROUTE_PREFIX = '/_m'
 
-export function compileServerFile({ code }: { code: string }) {
+export function compileSecretFile({ code }: { code: string }) {
   let compiled = esbuild.buildSync({
     stdin: {
       contents: code,
@@ -110,15 +110,18 @@ export async function compileFile(opts: {
                           if (path.node.callee.name === 'fetch$') {
                             // Fetch RPCs
                             transformFetch$(path, state)
+                          } else if (path.node.callee.name === 'server$') {
+                            // Fetch RPCs
+                            transformServer$(path, state)
                           } else if (path.node.callee.name === 'import$') {
                             // Server-only expressions
                             transformImport$(path, state)
                           } else if (path.node.callee.name === 'split$') {
                             // Code splitting
                             transformSplit$(path, state)
-                          } else if (path.node.callee.name === 'server$') {
+                          } else if (path.node.callee.name === 'secret$') {
                             // Server-only expressions
-                            transformServer$(path, state)
+                            transformSecret$(path, state)
                           } else if (path.node.callee.name === 'lazy$') {
                             // Server-only expressions
                             transformLazy$(path, state)
@@ -268,15 +271,18 @@ export async function splitFile(opts: {
                           if (path.node.callee.name === 'fetch$') {
                             // Fetch RPCs
                             transformFetch$(path, state)
+                          } else if (path.node.callee.name === 'server$') {
+                            // Fetch RPCs
+                            transformServer$(path, state)
                           } else if (path.node.callee.name === 'import$') {
                             // Server-only expressions
                             transformImport$(path, state)
                           } else if (path.node.callee.name === 'split$') {
                             // Code splitting
                             transformSplit$(path, state)
-                          } else if (path.node.callee.name === 'server$') {
+                          } else if (path.node.callee.name === 'secret$') {
                             // Server-only expressions
-                            transformServer$(path, state)
+                            transformSecret$(path, state)
                           } else if (path.node.callee.name === 'lazy$') {
                             // Server-only expressions
                             transformLazy$(path, state)
@@ -588,7 +594,7 @@ function transformImport$(
   )
 }
 
-function transformServer$(
+function transformSecret$(
   path: babel.NodePath<t.CallExpression>,
   state: State,
 ) {
@@ -634,6 +640,31 @@ function transformLazy$(path: babel.NodePath<t.CallExpression>, state: State) {
         true,
       ),
     ]),
+  )
+}
+
+function transformServer$(
+  path: babel.NodePath<t.CallExpression>,
+  state: State,
+) {
+  const expression = path.node.arguments[0] as t.Expression
+
+  let program = path.findParent((p) => t.isProgram(p))
+  let statement = path.findParent((p) => {
+    const body = program!.get('body') as babel.NodePath<babel.types.Node>[]
+
+    return body.includes(p)
+  })!
+
+  if (!state.imported['fetch$']) {
+    statement.insertBefore(
+      template.smart(`import { fetch$ } from '@tanstack/bling'`)(),
+    )
+    state.imported['fetch$'] = true
+  }
+
+  path.replaceWith(
+    t.callExpression(t.identifier('fetch$'), path.node.arguments),
   )
 }
 

@@ -23,7 +23,7 @@ import type {
   FetchFnCtxWithRequest,
   SplitFn,
   CreateSplitFn,
-  CreateServerFn,
+  CreateSecretFn,
   CreateImportFn,
   CreateLazyFn,
 } from './types'
@@ -125,6 +125,8 @@ const serverMethods: ServerFetcherMethods = {
 }
 
 export const fetch$: FetchFn = Object.assign(serverImpl, serverMethods)
+
+export const server$ = fetch$
 
 export async function handleFetch$(
   _ctx: Omit<FetchFnCtxWithRequest, '__hasRequest'>,
@@ -304,7 +306,7 @@ export const lazy$: CreateLazyFn = (_fn) => {
   throw new Error('Should be compiled away')
 }
 
-export const server$: CreateServerFn = (_value) => {
+export const secret$: CreateSecretFn = (_value) => {
   throw new Error('Should be compiled away')
 }
 

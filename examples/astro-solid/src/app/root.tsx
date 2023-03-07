@@ -1,27 +1,34 @@
-import { fetch$, server$, import$ } from '@tanstack/bling'
+import { server$, secret$, import$ } from '@tanstack/bling'
 import { createSignal, lazy, Suspense, useContext } from 'solid-js'
 import { HydrationScript, NoHydration } from 'solid-js/web'
 import { manifestContext } from './manifest'
-const fetchHello = fetch$(() => console.log('Hello world'))
+import { secret } from './server.secret$'
+
+const sayHello = server$(() => console.log('Hello world'))
 
 const LazyHello3 = lazy(() =>
   import$({
     default: () => {
       return (
         <>
-          <button onClick={() => fetchHello()}>Split up</button>
+          <button onClick={() => sayHello()}>Split up</button>
         </>
       )
     },
   }),
 )
 
-const inlineSecret = server$('I am an inline server secret!')
+const inlineSecret = secret$('I am an inline server secret!')
 
 export function App() {
   console.log(
     'Do you know the inline server secret?',
     inlineSecret ?? 'Not even.',
+  )
+
+  console.log(
+    'Do you know the server secret in server.secret.ts?',
+    secret ?? 'Nope',
   )
 
   const [state, setState] = createSignal(0)
@@ -69,4 +76,3 @@ function Scripts() {
     </NoHydration>
   )
 }
-

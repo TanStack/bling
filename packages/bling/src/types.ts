@@ -76,4 +76,4 @@ export type SplitFn<T extends AnySplitFn> = (
   ...args: Parameters<T>
 ) => Promise<Awaited<ReturnType<T>>>
 
-export type CreateServerFn = <T>(value: T) => T
+export type CreateSecretFn = <T>(value: T) => T

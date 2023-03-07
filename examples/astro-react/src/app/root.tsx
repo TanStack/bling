@@ -1,11 +1,11 @@
-import { fetch$, server$, lazy$, import$ } from '@tanstack/bling'
+import { server$, lazy$, import$, secret$ } from '@tanstack/bling'
 import React, { Fragment, lazy, Suspense, useContext } from 'react'
 import { manifestContext } from './manifest'
 
-const fetchHello = fetch$(() => console.log('Hello world'))
+const sayHello = server$(() => console.log('Hello world'))
 
 function ServerHello() {
-  return <button onClick={() => fetchHello()}>ServerFn Hello</button>
+  return <button onClick={() => sayHello()}>ServerFn Hello</button>
 }
 
 const LazyHello = lazy$((props) => {
@@ -16,7 +16,7 @@ const LazyHello2 = lazy$(function SplitHelloas() {
   return (
     <Fragment>
       <button onClick={() => console.log('hello')}>Split asdasd21o</button>
-      <LazyHello onClick={() => fetchHello()} />
+      <LazyHello onClick={() => sayHello()} />
     </Fragment>
   )
 })
@@ -27,14 +27,14 @@ const LazyHello3 = lazy(() =>
       return (
         <Fragment>
           <button onClick={() => console.log('hello')}>Split asdasd21o</button>
-          <LazyHello onClick={() => fetchHello()} />
+          <LazyHello onClick={() => sayHello()} />
         </Fragment>
       )
     },
   }),
 )
 
-const inlineSecret = server$('I am an inline server secret!')
+const inlineSecret = secret$('I am an inline server secret!')
 
 export function App() {
   console.log(
