@@ -91,8 +91,6 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
           id: id.replace(/\.ts$/, '.tsx').replace(/\.js$/, '.jsx'),
         })
 
-        virtualModules = compiled.virtualModules
-
         return compiled.code
       }
     },

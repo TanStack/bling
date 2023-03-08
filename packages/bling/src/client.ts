@@ -62,7 +62,7 @@ const fetchImpl = (() => {
 
 const fetchMethods: CreateClientFetcherMethods = {
   createFetcher: (pathname: string, defaultOpts?: FetchFnCtxOptions) => {
-    const fetcherImpl = async (payload: any, opts?: FetchFnCtxOptions) => {
+    const fetcherImpl = async (payload: any = {}, opts?: FetchFnCtxOptions) => {
       const method = opts?.method || defaultOpts?.method || 'POST'
 
       const baseInit: RequestInit = {

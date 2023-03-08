@@ -84,8 +84,6 @@ export async function compileFile(opts: {
   id: string
   ssr: boolean
 }) {
-  let splitModulesById: SplitModulesById = {}
-
   const compiledCode = await opts.viteCompile(
     opts.code,
     opts.id,
@@ -138,12 +136,25 @@ export async function compileFile(opts: {
                             '@tanstack/bling/server',
                           )
                         }
+
+                        if (
+                          state.opts.ssr &&
+                          path.node.source.value === '@tanstack/bling'
+                        ) {
+                          if (
+                            path.node.specifiers.find((s) =>
+                              s.type === 'ImportSpecifier'
+                                ? s.local.name === 'fetch$'
+                                : false,
+                            )
+                          ) {
+                            state.imported['$fetch'] = true
+                          }
+                        }
                       },
                     },
                     state,
                   )
-
-                  splitModulesById = { ...state.splitModulesById }
 
                   treeShake(path, state)
                 },
@@ -160,77 +171,8 @@ export async function compileFile(opts: {
     }),
   )
 
-  let virtualModules: Record<string, string> = {}
-
-  await Promise.all(
-    Object.values(splitModulesById).map(async (splitModule) => {
-      const plugin = (): babel.PluginObj => ({
-        visitor: {
-          Program: {
-            enter(path, _state) {
-              const state = _state as unknown as State
-
-              trackProgram(path, state)
-
-              // Remove default exports and do not export named exports
-              // (but keep the variable declarations)
-              path.traverse(
-                {
-                  ExportDefaultDeclaration: (path) => {
-                    path.remove()
-                  },
-                  ExportNamedDeclaration: (path) => {
-                    path.replaceWith(path.node.declaration!)
-                  },
-                  CallExpression: (path) => {
-                    // if called with `__astro_tag_component__`
-                    if (
-                      path.node.callee.type === 'Identifier' &&
-                      path.node.callee.name === '__astro_tag_component__'
-                    ) {
-                      path.remove()
-                    }
-                  },
-                },
-                state as State,
-              )
-
-              const fnCode = new CodeGenerator(splitModule.node).generate().code
-
-              path.node.body.push(
-                template.smart(`
-                  export default ${fnCode}
-                `)() as t.Statement,
-              )
-
-              treeShake(path, state)
-            },
-          },
-        },
-      })
-
-      virtualModules[splitModule.id] = await opts.viteCompile(
-        opts.code,
-        opts.id,
-        (source: any, id: any) => ({
-          plugins: [
-            [
-              plugin,
-              {
-                ssr: opts.ssr,
-                root: process.cwd(),
-                minify: process.env.NODE_ENV === 'production',
-              },
-            ],
-          ].filter(Boolean),
-        }),
-      )
-    }),
-  )
-
   return {
     code: compiledCode,
-    virtualModules,
   }
 }
 
@@ -244,7 +186,7 @@ export async function splitFile(opts: {
 }) {
   let splitModulesById: SplitModulesById = {}
 
-  const compiledCode = await opts.viteCompile(
+  const compiledCode = (await opts.viteCompile(
     opts.code,
     opts.id,
     (source: any, id: any) => ({
@@ -298,6 +240,21 @@ export async function splitFile(opts: {
                           path.node.source = t.stringLiteral(
                             '@tanstack/bling/server',
                           )
+                        }
+
+                        if (
+                          state.opts.ssr &&
+                          path.node.source.value === '@tanstack/bling'
+                        ) {
+                          if (
+                            path.node.specifiers.find((s) =>
+                              s.type === 'ImportSpecifier'
+                                ? s.local.name === 'fetch$'
+                                : false,
+                            )
+                          ) {
+                            state.imported['$fetch'] = true
+                          }
                         }
                       },
                     },
@@ -376,7 +333,18 @@ export async function splitFile(opts: {
         ],
       ].filter(Boolean),
     }),
-  )
+  )) as any
+
+  console.log(compiledCode)
+
+  if (compiledCode.code.includes('server$')) {
+    return compileFile({
+      code: compiledCode.code,
+      viteCompile: opts.viteCompile,
+      id: opts.id,
+      ssr: opts.ssr,
+    })
+  }
 
   return {
     code: compiledCode,

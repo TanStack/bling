@@ -1,9 +1,8 @@
-import { server$, import$, secret$, redirect } from '@tanstack/bling'
-import { createSignal, lazy, Show, Suspense, useContext } from 'solid-js'
+import { server$, import$, secret$ } from '@tanstack/bling'
+import { createSignal, lazy, Suspense, useContext } from 'solid-js'
 import { HydrationScript, NoHydration } from 'solid-js/web'
 import { manifestContext } from './manifest'
-import { Link, Outlet, RouteDefinition, useRouteData } from '@solidjs/router'
-import { createRouteAction, createRouteData } from './data'
+import { Link, Outlet, RouteDefinition } from '@solidjs/router'
 
 const sayHello = server$(() => console.log('Hello world'))
 
@@ -75,13 +74,6 @@ function Scripts() {
   )
 }
 
-let count = 0
-
-const increment = server$(async () => {
-  count = count + 1
-  return redirect('/about')
-})
-
 export const routes = [
   {
     path: '/',
@@ -93,24 +85,16 @@ export const routes = [
       },
       {
         path: 'about',
-        data: () => {
-          return createRouteData(server$(() => ({ count })))
-        },
         component: lazy(() =>
           import$({
-            default: () => {
-              const routeData = useRouteData()
-              const [action, submit] = createRouteAction(increment)
-              return (
-                <div>
-                  About <Show when={routeData()}>{routeData().count}</Show>
-                  <Suspense fallback={'loading'}>
-                    <LazyHello3 />
-                  </Suspense>
-                  <button onClick={() => submit()}>Increment</button>
-                </div>
-              )
-            },
+            default: () => (
+              <div>
+                About{' '}
+                <Suspense fallback={'loading'}>
+                  <LazyHello3 />
+                </Suspense>
+              </div>
+            ),
           }),
         ),
       },
