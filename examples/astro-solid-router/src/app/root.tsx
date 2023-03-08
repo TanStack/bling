@@ -1,8 +1,15 @@
 import { server$, import$, secret$ } from '@tanstack/bling'
-import { createSignal, lazy, Suspense, useContext } from 'solid-js'
+import {
+  createResource,
+  createSignal,
+  lazy,
+  Show,
+  Suspense,
+  useContext,
+} from 'solid-js'
 import { HydrationScript, NoHydration } from 'solid-js/web'
 import { manifestContext } from './manifest'
-import { Link, Outlet, RouteDefinition } from '@solidjs/router'
+import { Link, Outlet, RouteDefinition, useRouteData } from '@solidjs/router'
 
 const sayHello = server$(() => console.log('Hello world'))
 
@@ -85,16 +92,22 @@ export const routes = [
       },
       {
         path: 'about',
+        data: () => {
+          return createResource(server$(() => ({ hello: 'world' })))
+        },
         component: lazy(() =>
           import$({
-            default: () => (
-              <div>
-                About{' '}
-                <Suspense fallback={'loading'}>
-                  <LazyHello3 />
-                </Suspense>
-              </div>
-            ),
+            default: () => {
+              const [routeData] = useRouteData()
+              return (
+                <div>
+                  About <Show when={routeData()}>{routeData()['hello']}</Show>
+                  <Suspense fallback={'loading'}>
+                    <LazyHello3 />
+                  </Suspense>
+                </div>
+              )
+            },
           }),
         ),
       },
