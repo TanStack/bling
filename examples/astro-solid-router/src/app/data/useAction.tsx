@@ -4,7 +4,7 @@ import { FormError, FormImpl, FormProps } from './Form'
 
 import type { ParentComponent } from 'solid-js'
 import { isRedirectResponse } from '@tanstack/bling'
-import { refetchRouteData } from './createRouteData'
+import { refetchLoaders } from './useLoader'
 
 interface ActionEvent {}
 export interface Submission<T, U> {
@@ -42,15 +42,11 @@ export type Invalidate =
   | string
   | any[]
 
-export function createRouteAction<T = void, U = void>(
-  fn: (arg1: void, event: ActionEvent) => Promise<U>,
-  options?: { invalidate?: Invalidate },
-): RouteAction<T, U>
-export function createRouteAction<T, U = void>(
+export function useAction<T, U = void>(
   fn: (args: T) => Promise<U>,
   options?: { invalidate?: Invalidate },
 ): RouteAction<T, U>
-export function createRouteAction<T, U = void>(
+export function useAction<T, U = void>(
   fn: (args: T) => Promise<U>,
   options: { invalidate?: Invalidate } = {},
 ): RouteAction<T, U> {
@@ -139,15 +135,15 @@ export function createRouteAction<T, U = void>(
   ]
 }
 
-export function createRouteMultiAction<T = void, U = void>(
+export function useMultiAction<T = void, U = void>(
   fn: (arg1: void, event: ActionEvent) => Promise<U>,
   options?: { invalidate?: Invalidate },
 ): RouteMultiAction<T, U>
-export function createRouteMultiAction<T, U = void>(
+export function useMultiAction<T, U = void>(
   fn: (args: T, event: ActionEvent) => Promise<U>,
   options?: { invalidate?: Invalidate },
 ): RouteMultiAction<T, U>
-export function createRouteMultiAction<T, U = void>(
+export function useMultiAction<T, U = void>(
   fn: (args: T, event: ActionEvent) => Promise<U>,
   options: { invalidate?: Invalidate } = {},
 ): RouteMultiAction<T, U> {
@@ -250,7 +246,7 @@ function handleRefetch(
   response: Response | string | any[],
   options: { invalidate?: Invalidate } = {},
 ) {
-  return refetchRouteData(
+  return refetchLoaders(
     typeof options.invalidate === 'function'
       ? options.invalidate(response as Response)
       : options.invalidate,

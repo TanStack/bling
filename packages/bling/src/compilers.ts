@@ -335,8 +335,6 @@ export async function splitFile(opts: {
     }),
   )) as any
 
-  console.log(compiledCode)
-
   if (compiledCode.code.includes('server$')) {
     return compileFile({
       code: compiledCode.code,

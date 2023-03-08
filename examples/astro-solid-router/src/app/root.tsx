@@ -3,7 +3,7 @@ import { createSignal, lazy, Show, Suspense, useContext } from 'solid-js'
 import { HydrationScript, NoHydration } from 'solid-js/web'
 import { manifestContext } from './manifest'
 import { Link, Outlet, RouteDefinition, useRouteData } from '@solidjs/router'
-import { createRouteAction, createRouteData } from './data'
+import { useAction, useLoader } from './data'
 
 const sayHello = server$(() => console.log('Hello world'))
 
@@ -94,13 +94,13 @@ export const routes = [
       {
         path: 'about',
         data: () => {
-          return createRouteData(server$(() => ({ count })))
+          return useLoader(server$(() => ({ count })))
         },
         component: lazy(() =>
           import$({
             default: () => {
               const routeData = useRouteData()
-              const [action, submit] = createRouteAction(increment)
+              const [action, submit] = useAction(increment)
               return (
                 <div>
                   About <Show when={routeData()}>{routeData().count}</Show>

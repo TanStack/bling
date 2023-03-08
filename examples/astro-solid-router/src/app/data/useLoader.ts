@@ -42,15 +42,15 @@ type RouteDataOptions<T, S> = ResourceOptions<T> & {
 const resources = new Set<(k: any) => void>()
 const promises = new Map<any, Promise<any>>()
 
-export function createRouteData<T, S = true>(
+export function useLoader<T, S = true>(
   fetcher: RouteDataFetcher<S, T>,
   options?: RouteDataOptions<undefined, S>,
 ): Resource<T | undefined>
-export function createRouteData<T, S = true>(
+export function useLoader<T, S = true>(
   fetcher: RouteDataFetcher<S, T>,
   options: RouteDataOptions<T, S>,
 ): Resource<T>
-export function createRouteData<T, S>(
+export function useLoader<T, S>(
   fetcher?: RouteDataFetcher<S, T>,
   options: RouteDataOptions<T, S> | RouteDataOptions<undefined, S> = {},
 ): Resource<T> | Resource<T | undefined> {
@@ -155,7 +155,7 @@ export function createRouteData<T, S>(
   return resource
 }
 
-export function refetchRouteData(key?: string | any[] | void) {
+export function refetchLoaders(key?: string | any[] | void) {
   if (isServer) throw new Error('Cannot refetch route data on the server.')
   return startTransition(() => {
     for (let refetch of resources) refetch(key)
