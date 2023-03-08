@@ -5,7 +5,7 @@ import Toggle from './toggle'
 
 const Comment: Component<{ comment: IComment }> = (props) => {
   return (
-    <li class="comment"></li>
+    <li class="comment">
       <div class="by">
         <A href={`/users/${props.comment.user}`}>{props.comment.user}</A>{' '}
         {props.comment.time_ago} ago
