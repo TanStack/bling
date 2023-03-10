@@ -8,6 +8,8 @@ import {
   XBlingResponseTypeHeader,
 } from './utils/utils'
 
+import { lazy } from 'solid-js'
+
 import type {
   AnyFetchFn,
   Serializer,
@@ -123,3 +125,14 @@ export const lazy$: CreateSplitFn = (_fn) => {
 export const secret$: CreateSecretFn = (_value) => {
   throw new Error('Should be compiled away')
 }
+
+let islands: Record<string, any> = {}
+
+export const island$ = Object.assign(
+  (_fn: any) => {
+    throw new Error('Should be compiled away')
+  },
+  {
+    load: lazy,
+  },
+)

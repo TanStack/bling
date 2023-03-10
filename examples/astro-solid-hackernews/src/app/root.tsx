@@ -56,11 +56,9 @@ function App() {
       </head>
       <body>
         <Nav />
-        <ErrorBoundary fallback>
-          <Suspense fallback={<div class="news-list-nav">Loading...</div>}>
-            <Outlet />
-          </Suspense>
-        </ErrorBoundary>
+        <Suspense fallback={<div class="news-list-nav">Loading...</div>}>
+          <Outlet />
+        </Suspense>
         <Scripts />
       </body>
     </html>
@@ -72,6 +70,9 @@ function Scripts() {
   return (
     <NoHydration>
       <HydrationScript />
+      <script $ServerOnly>{`
+        window._$HY.island = () => {}
+      `}</script>
       {import.meta.env.DEV ? (
         <>
           <script type="module" src="/@vite/client" $ServerOnly></script>

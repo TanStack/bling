@@ -313,3 +313,16 @@ export const secret$: CreateSecretFn = (_value) => {
 export const import$: CreateImportFn = (_fn) => {
   throw new Error('Should be compiled away')
 }
+
+let islands: Record<string, any> = {}
+
+export const island$ = Object.assign(
+  (_fn: any) => {
+    throw new Error('Should be compiled away')
+  },
+  {
+    register: (component: any, path: string) => {
+      islands[path] = component
+    },
+  },
+)

@@ -19,7 +19,7 @@
     "build:vite": "esbuild src/vite.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/vite.js",
     "build:astro": "esbuild src/astro.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/astro.js",
     "build:compilers": "esbuild src/compilers.ts --bundle --platform=node --format=esm --sourcemap --packages=external --outfile=dist/compilers.js",
-    "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js",
+    "build:client": "esbuild src/client.ts --bundle --format=esm --minify --sourcemap --outfile=dist/client.js --external:solid-js",
     "prettier": "prettier \"packages/*/{src/**,examples/**/src/**}.{md,js,jsx,ts,tsx,json}\" --write"
   },
   "exports": {
@@ -70,6 +70,7 @@
     "@types/babel__traverse": "^7.18.3",
     "astro": "0.0.0-ssr-manifest-20230306183729",
     "concurrently": "^7.6.0",
+    "solid-js": "^1.4.3",
     "typescript": "4.9.4",
     "vitest": "^0.26.2"
   }
