@@ -119,7 +119,6 @@ export let routes = [
       {
         path: 'hello',
         loader: server$((args, { request }) => {
-          console.log(inlineSecret)
           return {
             'got data': inlineSecret,
             req: [...request.headers.entries()],
