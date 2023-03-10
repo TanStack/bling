@@ -1,4 +1,4 @@
-import { Component, For, Show } from 'solid-js'
+import { Component, For, lazy, Show } from 'solid-js'
 import { A } from '@solidjs/router'
 import type { IComment } from '../types'
 import { interactive$ } from '@tanstack/bling'

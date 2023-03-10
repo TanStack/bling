@@ -317,14 +317,16 @@ export const import$: CreateImportFn = (_fn) => {
 
 let islands: Record<string, any> = {}
 
-export const interactive$ = Object.assign(
-  (_fn: any) => {
-    throw new Error('Should be compiled away')
+function interactiveImpl<T extends any>(
+  fn: () => Promise<{
+    default: T
+  }>,
+): T {
+  throw new Error('Should be compiled away')
+}
+export const interactive$ = Object.assign(interactiveImpl, {
+  register: (component: any, path: string) => {
+    islands[path] = island(component, path)
+    return islands[path]
   },
-  {
-    register: (component: any, path: string) => {
-      islands[path] = island(component, path)
-      return islands[path]
-    },
-  },
-)
+})

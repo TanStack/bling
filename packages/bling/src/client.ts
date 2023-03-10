@@ -126,13 +126,14 @@ export const secret$: CreateSecretFn = (_value) => {
   throw new Error('Should be compiled away')
 }
 
-let islands: Record<string, any> = {}
+function interactiveImpl<T extends any>(
+  fn: () => Promise<{
+    default: T
+  }>,
+): T {
+  throw new Error('Should be compiled away')
+}
 
-export const interactive$ = Object.assign(
-  (_fn: any) => {
-    throw new Error('Should be compiled away')
-  },
-  {
-    load: lazy,
-  },
-)
+export const interactive$ = Object.assign(interactiveImpl, {
+  load: lazy,
+})
