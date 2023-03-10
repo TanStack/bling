@@ -21,6 +21,7 @@ type SplitModulesById = Record<
 
 interface State {
   filename: string
+  importedId: string
   opts: {
     ssr: boolean
     minify: boolean
@@ -78,6 +79,73 @@ export function compileSecretFile({ code }: { code: string }) {
   }
 }
 
+interface Compiler {
+  initializeState?: (state: State) => void
+  transform: (path: traverse.NodePath<t.CallExpression>, state: State) => void
+}
+
+export let compilers: Record<string, Compiler> = {
+  fetch$: {
+    transform: transformFetch$,
+    initializeState: (state) => {
+      state.serverIndex = 0
+    },
+  },
+  server$: { transform: transformServer$ },
+  split$: { transform: transformSplit$ },
+  secret$: { transform: transformSecret$ },
+  import$: {
+    transform: transformImport$,
+    initializeState: (state) => {
+      state.splitIndex = 0
+      state.splitModulesById = {}
+    },
+  },
+  lazy$: { transform: transformLazy$ },
+  interactive$: { transform: transformInteractive$ },
+}
+
+function compilePragma(
+  path: traverse.NodePath<t.CallExpression>,
+  state: State,
+) {
+  if (path.node.callee.type === 'Identifier') {
+    if (compilers[path.node.callee.name]) {
+      compilers[path.node.callee.name].transform(path, state)
+    }
+  }
+}
+
+function rewriteBlingImport(
+  path: traverse.NodePath<t.ImportDeclaration>,
+  state: State,
+) {
+  if (state.opts.ssr && path.node.source.value === '@tanstack/bling') {
+    path.node.source.value = '@tanstack/bling/server'
+  }
+}
+
+function trackImports(
+  path: traverse.NodePath<t.ImportDeclaration>,
+  state: State,
+) {
+  if (path.node.source.value === '@tanstack/bling') {
+    path.node.specifiers
+      .filter((s) => s.type === 'ImportSpecifier')
+      .forEach((spec) => {
+        state.imported[spec.local.name] = true
+      })
+  }
+}
+
+function initializeCompilerState(state: State) {
+  Object.values(compilers).forEach((compiler) => {
+    if (compiler.initializeState) {
+      compiler.initializeState(state)
+    }
+  })
+}
+
 export async function compileFile(opts: {
   code: string
   viteCompile: (code: string, id: string, cb: any) => Promise<string>
@@ -94,63 +162,21 @@ export async function compileFile(opts: {
             visitor: {
               Program: {
                 enter(path: traverse.NodePath, state: State) {
-                  state.splitModulesById = {}
-                  state.serverIndex = 0
-                  state.splitIndex = 0
                   state.imported = {}
+                  state.importedId = opts.id
+
+                  initializeCompilerState(state)
 
                   trackProgram(path, state)
 
                   path.traverse(
                     {
                       CallExpression: (path) => {
-                        if (path.node.callee.type === 'Identifier') {
-                          if (path.node.callee.name === 'fetch$') {
-                            // Fetch RPCs
-                            transformFetch$(path, state)
-                          } else if (path.node.callee.name === 'server$') {
-                            // Fetch RPCs
-                            transformServer$(path, state)
-                          } else if (path.node.callee.name === 'import$') {
-                            // Server-only expressions
-                            transformImport$(path, state)
-                          } else if (path.node.callee.name === 'split$') {
-                            // Code splitting
-                            transformSplit$(path, state)
-                          } else if (path.node.callee.name === 'secret$') {
-                            // Server-only expressions
-                            transformSecret$(path, state)
-                          } else if (path.node.callee.name === 'lazy$') {
-                            // Server-only expressions
-                            transformLazy$(path, state)
-                          }
-                        }
+                        compilePragma(path, state)
                       },
                       ImportDeclaration: function (path, state) {
-                        // Rewrite imports to `@tanstack/bling` to `@tanstack/bling/server` during SSR
-                        if (
-                          state.opts.ssr &&
-                          path.node.source.value === '@tanstack/bling'
-                        ) {
-                          path.node.source = t.stringLiteral(
-                            '@tanstack/bling/server',
-                          )
-                        }
-
-                        if (
-                          state.opts.ssr &&
-                          path.node.source.value === '@tanstack/bling'
-                        ) {
-                          if (
-                            path.node.specifiers.find((s) =>
-                              s.type === 'ImportSpecifier'
-                                ? s.local.name === 'fetch$'
-                                : false,
-                            )
-                          ) {
-                            state.imported['$fetch'] = true
-                          }
-                        }
+                        rewriteBlingImport(path, state)
+                        trackImports(path, state)
                       },
                     },
                     state,
@@ -196,10 +222,10 @@ export async function splitFile(opts: {
             visitor: {
               Program: {
                 enter(path: traverse.NodePath<t.Program>, state: State) {
-                  state.splitModulesById = {}
-                  state.serverIndex = 0
-                  state.splitIndex = 0
                   state.imported = {}
+                  state.importedId = opts.id
+
+                  initializeCompilerState(state)
 
                   // we track all the variables that are referenced in the file somewhere apart from
                   // declaration
@@ -208,69 +234,22 @@ export async function splitFile(opts: {
                   // we transform everything, thus probably removing some references
                   path.traverse(
                     {
-                      CallExpression: (path) => {
-                        if (path.node.callee.type === 'Identifier') {
-                          if (path.node.callee.name === 'fetch$') {
-                            // Fetch RPCs
-                            transformFetch$(path, state)
-                          } else if (path.node.callee.name === 'server$') {
-                            // Fetch RPCs
-                            transformServer$(path, state)
-                          } else if (path.node.callee.name === 'import$') {
-                            // Server-only expressions
-                            transformImport$(path, state)
-                          } else if (path.node.callee.name === 'split$') {
-                            // Code splitting
-                            transformSplit$(path, state)
-                          } else if (path.node.callee.name === 'secret$') {
-                            // Server-only expressions
-                            transformSecret$(path, state)
-                          } else if (path.node.callee.name === 'lazy$') {
-                            // Server-only expressions
-                            transformLazy$(path, state)
-                          }
-                        }
+                      CallExpression: (path, state) => {
+                        compilePragma(path, state)
                       },
                       ImportDeclaration: function (path, state) {
                         // Rewrite imports to `@tanstack/bling` to `@tanstack/bling/server` during SSR
-                        if (
-                          state.opts.ssr &&
-                          path.node.source.value === '@tanstack/bling'
-                        ) {
-                          path.node.source = t.stringLiteral(
-                            '@tanstack/bling/server',
-                          )
-                        }
-
-                        if (
-                          state.opts.ssr &&
-                          path.node.source.value === '@tanstack/bling'
-                        ) {
-                          if (
-                            path.node.specifiers.find((s) =>
-                              s.type === 'ImportSpecifier'
-                                ? s.local.name === 'fetch$'
-                                : false,
-                            )
-                          ) {
-                            state.imported['$fetch'] = true
-                          }
-                        }
+                        rewriteBlingImport(path, state)
+                        trackImports(path, state)
                       },
                     },
                     state,
                   )
 
-                  splitModulesById = { ...state.splitModulesById }
-
                   // recompute scope/refs
                   path.scope.crawl()
                 },
                 exit(path: traverse.NodePath<t.Program>, state: State) {
-                  state.splitModulesById = {}
-                  state.serverIndex = 0
-                  state.splitIndex = 0
-
                   // while exiting, we want to see what variables are still
                   // referenced, including the ones before the initial transform
                   // but now we will also analyze the code generated by our transforms
@@ -306,7 +285,7 @@ export async function splitFile(opts: {
                   )
 
                   let splitModule =
-                    splitModulesById[
+                    state.splitModulesById[
                       `${opts.id}?split=${opts.splitIndex}&ref=${opts.ref}`
                     ]
 
@@ -335,7 +314,7 @@ export async function splitFile(opts: {
     }),
   )) as any
 
-  if (compiledCode.code.includes('server$')) {
+  if (compiledCode.code.includes('server$(')) {
     return compileFile({
       code: compiledCode.code,
       viteCompile: opts.viteCompile,
@@ -631,6 +610,53 @@ function transformServer$(
 
   path.replaceWith(
     t.callExpression(t.identifier('fetch$'), path.node.arguments),
+  )
+}
+
+function transformInteractive$(
+  path: babel.NodePath<t.CallExpression>,
+  state: State,
+) {
+  const expression = path.node.arguments[0] as t.Expression
+
+  let program = path.findParent((p) => t.isProgram(p))
+  let statement = path.findParent((p) => {
+    const body = program!.get('body') as babel.NodePath<babel.types.Node>[]
+
+    return body.includes(p)
+  })!
+
+  // path.replaceWith(
+  //   t.callExpression(t.identifier('fetch$'), path.node.arguments),
+  // )
+
+  let decl = 'Decl'
+  if (statement.isVariableDeclaration()) {
+    decl = (statement.node.declarations[0].id as any).name
+  }
+
+  let importedFrom = 'abc'
+  if (t.isArrowFunctionExpression(expression)) {
+    importedFrom = (expression as any).body.arguments[0].value
+  }
+
+  statement.insertBefore(
+    template.smart(`import ${decl}_island from "${importedFrom}"`)(),
+  )
+
+  path.replaceWith(
+    (
+      template.smart(
+        `interactive$.register(${decl}_island, "${
+          nodePath
+            .join(nodePath.dirname(state.importedId), importedFrom)
+            .slice(process.cwd().length + 1)
+            .replaceAll('\\', '/') +
+          '.tsx' +
+          '?island'
+        }");`,
+      )() as t.ExpressionStatement
+    ).expression,
   )
 }
 

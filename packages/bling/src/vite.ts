@@ -1,7 +1,12 @@
 import type { Plugin } from 'vite'
 import viteReact, { Options } from '@vitejs/plugin-react'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { compileSecretFile, compileFile, splitFile } from './compilers'
+import {
+  compileSecretFile,
+  compileFile,
+  splitFile,
+  compilers,
+} from './compilers'
 
 export const virtualModuleSplitPrefix = 'virtual:bling-split$-'
 export const virtualPrefix = '\0'
@@ -80,10 +85,7 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         return compiled.code
       }
 
-      if (
-        code.includes('fetch$(' || code.includes('split$(')) ||
-        code.includes('server$(')
-      ) {
+      if (Object.keys(compilers).find((key) => code.includes(key + '('))) {
         const compiled = await compileFile({
           code,
           viteCompile,
@@ -92,6 +94,19 @@ export function bling(opts?: { babel?: Options['babel'] }): Plugin {
         })
 
         return compiled.code
+      }
+    },
+    load(id) {
+      if (id.endsWith('?island')) {
+        return {
+          code: `
+            import Component from '${id.replace('?island', '')}';
+
+            window._$HY.island("${id.slice(process.cwd().length)}", Component);
+
+            export default Component;
+            `,
+        }
       }
     },
   }
