@@ -71,7 +71,8 @@ function Scripts() {
     <NoHydration>
       <HydrationScript />
       <script $ServerOnly>{`
-        window._$HY.island = () => {}
+        window._$HY.islandMap = {}
+        window._$HY.island = (p, c) => window._$HY.islandMap[p] = c
       `}</script>
       {import.meta.env.DEV ? (
         <>

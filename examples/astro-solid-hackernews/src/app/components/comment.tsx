@@ -1,11 +1,10 @@
 import { Component, For, Show } from 'solid-js'
 import { A } from '@solidjs/router'
 import type { IComment } from '../types'
-import { island$ } from '@tanstack/bling'
+import { interactive$ } from '@tanstack/bling'
 
-const Toggle = island$(() => import('./toggle'))
+const Toggle = interactive$(() => import('./toggle'))
 
-console.log(Toggle)
 const Comment: Component<{ comment: IComment }> = (props) => {
   return (
     <li class="comment">

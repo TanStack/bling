@@ -27,6 +27,7 @@ import type {
   CreateImportFn,
   CreateLazyFn,
 } from './types'
+import { island } from './interactive'
 
 export * from './utils/utils'
 
@@ -316,13 +317,14 @@ export const import$: CreateImportFn = (_fn) => {
 
 let islands: Record<string, any> = {}
 
-export const island$ = Object.assign(
+export const interactive$ = Object.assign(
   (_fn: any) => {
     throw new Error('Should be compiled away')
   },
   {
     register: (component: any, path: string) => {
-      islands[path] = component
+      islands[path] = island(component, path)
+      return islands[path]
     },
   },
 )

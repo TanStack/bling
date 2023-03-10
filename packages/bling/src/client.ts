@@ -128,7 +128,7 @@ export const secret$: CreateSecretFn = (_value) => {
 
 let islands: Record<string, any> = {}
 
-export const island$ = Object.assign(
+export const interactive$ = Object.assign(
   (_fn: any) => {
     throw new Error('Should be compiled away')
   },

@@ -25,21 +25,21 @@ function islands() {
      * @param {string} code
      */
     transform(code, id, ssr) {
-      if (code.includes('island$(')) {
+      if (code.includes('interactive$(')) {
         let replaced = code.replaceAll(
-          /const ([A-Za-z_]+) = island\$\(\(\) => import\((("([^"]+)")|('([^']+)'))\)\)/g,
+          /const ([A-Za-z_]+) = interactive\$\(\(\) => import\((("([^"]+)")|('([^']+)'))\)\)/g,
           (a, b, c) => {
             c = c.slice(1, -1)
             return ssr.ssr
               ? `import ${b}_island from "${c}";
-                  const ${b} = island$.register(${b}_island, "${
+                  const ${b} = interactive$.register(${b}_island, "${
                   join(dirname(id), c)
                     .slice(process.cwd().length + 1)
                     .replaceAll('\\', '/') +
                   '.tsx' +
                   '?island'
                 }");`
-              : `const ${b} = island$.load(() => import("${c}?island"), "${
+              : `const ${b} = interactive$.load(() => import("${c}?island"), "${
                   join(dirname(id), c).replaceAll('\\', '/') +
                   '.tsx' +
                   '?island'
