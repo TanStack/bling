@@ -126,13 +126,13 @@ The `server$` function can be used to scope any expression to the server-bundle 
 ```tsx
 import { server$ } from '@tanstack/bling'
 
-const serverOnly = server$('It is a secret!')')
+const serverOnly = server$('It is a secret!')
 ```
 
 Server Output:
 
 ```tsx
-const serverOnly = server$('It is a secret!')')
+const serverOnly = server$('It is a secret!')
 ```
 
 Client Output:
