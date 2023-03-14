@@ -6,12 +6,10 @@ Framework agnostic transpilation utilities for client/server RPCs, env isolation
 
 # API
 
-- [`fetch$`](#fetch)
-- [`server$`](#server)
-- [Server-only Files](#server-only-files)
-- [`split$`](#split)
-- Proposed/Future APIs
-  - [`worker$`](#worker)
+## Macros
+
+<details>
+<summary><code>server$</code></summary>
 
 ## `fetch$`
 
@@ -119,32 +117,37 @@ A function that can be called isomorphically from server or client side code to 
         - The request object to be passed to the `fetch` call to the server function.
         - Can be used to add headers, signals, etc.
 
-## `server$`
+</details>
 
-The `server$` function can be used to scope any expression to the server-bundle only. This means that the expression will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code.
+<details>
+<summary><code>secret$</code></summary>
+
+## `secret$`
+
+The `secret$` function can be used to scope any expression to the server (secret)-bundle only. This means that the expression will be removed from the client bundle. This is useful for things like server-side only imports, server-side only code or sensitive env variables that should never be available on the client.
 
 ```tsx
-import { server$ } from '@tanstack/bling'
+import { secret$ } from '@tanstack/bling'
 
-const serverOnly = server$('It is a secret!')')
+const secretMessage = secret$('It is a secret!')')
 ```
 
 Server Output:
 
 ```tsx
-const serverOnly = server$('It is a secret!')')
+const secretMessage = server$('It is a secret!')')
 ```
 
 Client Output:
 
 ```tsx
-const serverOnly = undefined
+const secretMessage = undefined
 ```
 
 ### Signature
 
 ```tsx
-server$<T>(input: T): T
+secret$<T>(input: T): T
 ```
 
 > 🧠 The return type is the same as the input type. Although the value could technically be `undefined` on the client, it's more useful to retain a non-nullable type in the wild.
@@ -159,9 +162,65 @@ server$<T>(input: T): T
 - The variable on the server
 - `undefined` on the client
 
+</details>
+
+<details>
+<summary><code>import$</code></summary>
+
+## `import$`
+
+The `import$` function can be used to code-split any expression into it's own module on both server and client at build-time. This is helpful for you to coordinate what code loads when without having to create new files for every part you want want to code-split. It's an async function just like the native dynamic import. It actually compiles down to a dynamic import, but with a unique hash for each import$ instance used in the file.
+
+```tsx
+import { import$ } from '@tanstack/bling'
+
+const fn = await import$(async (name: string) => {
+  return `Hello ${name}`
+})
+```
+
+This can be used to code-split React/Solid components too:
+
+```tsx
+import { import$ } from '@tanstack/bling'
+import { lazy } from 'react'
+
+const fn = lazy(() => import$({
+  default: () => <div>Hello World!</div>,
+}))
+```
+
+Output:
+
+```tsx
+const fn = await import('/this/file?split=0&ref=fn').then((m) => m.default)
+```
+
+### Signature
+
+```tsx
+import$<T extends any>(fn: T) => Promise<T>
+```
+
+### Arguments
+
+- `value`
+  - The value/expression/function to be code-split.
+
+### Returns
+
+- A code-split version of the original expression.
+
+</details>
+
+## File conventions
+
+<details>
+<summary><code>Secret files</code></summary>
+
 ## Server-Only Files
 
-The `[filename].server$.[ext]` pattern can be used to create server-side only files. These files will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code. It works with any file name and extension so long as `.server$.` is found in the resolved file pathname.
+The `[filename].secret.[ext]` pattern can be used to create server-side only files. These files will be removed from the client bundle. This is useful for things like server-side only imports, or server-side only code. It works with any file name and extension so long as `.server$.` is found in the resolved file pathname.
 
 When a server-only file is imported on the client, it will be provided the same exports, but stubbed with undefined values. Don't put anything sensitive in the exported variable name! 😜
 
@@ -178,43 +237,14 @@ export const secret = undefined
 export const anotherSecret = undefined
 ```
 
-## `split$`
+</details>
 
-The `split$` function can be used to code-split any asynchronous function on both server and client at build-time.
-
-```tsx
-import { split$ } from '@tanstack/bling'
-
-const fn = split$(async (name: string) => {
-  return `Hello ${name}`
-})
-```
-
-Output:
-
-```tsx
-const fn = (name: string) =>
-  import('virtual:split$-[hash]').then((m) => m.default(name))
-```
-
-### Signature
-
-```tsx
-split$<T extends (...args: any[]) => Promise<any>>(fn: T): T
-```
-
-### Arguments
-
-- `fn`
-  - The asynchronous function to be code-split.
-
-### Returns
-
-- A code-split version of the original function.
-
-# Proposed APIs
+## Proposed APIs
 
 The following APIs are proposed for future versions of Bling. They are not yet implemented, but are being considered for future releases.
+
+<details>
+<summary><code>worker$</code></summary>
 
 ## `worker$`
 
@@ -234,4 +264,9 @@ const result = sayHello('World!')
 console.log(result) // 'Hello World!'
 ```
 
+</details>
 <!-- Use the force, Luke! -->
+
+  - [`websocket$`](#websocket)
+  - [`lazy$`](#lazy)
+  - [`interactive$`/`island$`](#interactive)
