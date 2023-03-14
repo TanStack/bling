@@ -9,9 +9,7 @@ Framework agnostic transpilation utilities for client/server RPCs, env isolation
 ## Macros
 
 <details>
-<summary><code>server$</code></summary>
-
-## `server$`
+<summary><span style="font-size: 1.5rem; font-weight: bold"><code>server$</code></span></summary>
 
 The `server$` function is used to create an isomorphic server-side RPC. It takes a function and an optional configuration object and returns a function that can be called on both server (ssr or ssg) and client. The function passed to `server$` will only be executed on the server. On the client, a `fetch` call is made to the server function instead. The results of the function will be exactly the same on both server and client.
 
