@@ -1,0 +1,13 @@
+[workspace]
+members = [
+  "packages/swc-plugin",
+]
+
+[profile.release]
+# This removes more dead code
+codegen-units = 1
+lto = true
+# Optimize for size
+opt-level = "s"
+# Strip debug symbols
+strip = "symbols"
