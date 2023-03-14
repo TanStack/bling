@@ -1,6 +1,33 @@
-import { bling } from './vite'
+import { bling, collectStyles } from './vite'
 import { fileURLToPath } from 'url'
 import type { AstroIntegration, AstroConfig } from 'astro'
+import * as path from 'path'
+
+let cssModules: Record<string, string> = {}
+/**
+ * @returns {import('vite').Plugin}
+ * @param {any} options
+ */
+function collectCssModules() {
+  /** @type {import('./plugin').ViteConfig}  */
+  let config
+
+  const module_style_pattern =
+    /\.module\.(css|less|sass|scss|styl|stylus|pcss|postcss)$/
+
+  return {
+    name: 'solid-start-server',
+    config(c) {
+      config = c
+    },
+    transform(code, id) {
+      if (module_style_pattern.test(id)) {
+        cssModules[id] = code
+      }
+    },
+  } satisfies import('vite').Plugin
+}
+
 // https://astro.build/config
 export function astroBling(): AstroIntegration {
   let astroConfig: AstroConfig
@@ -8,10 +35,26 @@ export function astroBling(): AstroIntegration {
     name: '',
 
     hooks: {
+      'astro:server:setup': async (config) => {
+        let { _privateSetManifestDontUseThis } =
+          await config.server.ssrLoadModule('astro:ssr-manifest')
+        _privateSetManifestDontUseThis({
+          DEV: {
+            vite: config.server,
+            collectStyles: (match: string[]) =>
+              collectStyles(match, config.server, { cssModules }),
+          },
+        })
+      },
       'astro:config:setup': (config) => {
         config.updateConfig({
           vite: {
-            plugins: [bling()],
+            plugins: [collectCssModules(), bling()],
+            resolve: {
+              alias: {
+                '~': path.join(process.cwd(), `src/app`),
+              },
+            },
           },
         })
       },

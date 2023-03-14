@@ -8,6 +8,8 @@ import {
   compilers,
 } from './compilers'
 
+export { collectStyles } from './dev-styles'
+
 export const virtualModuleSplitPrefix = 'virtual:bling-split$-'
 export const virtualPrefix = '\0'
 
