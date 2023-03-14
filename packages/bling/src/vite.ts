@@ -9,8 +9,6 @@ export const virtualPrefix = '\0'
 export function bling(opts?: { babel?: Options['babel'] }): Plugin {
   const options = opts ?? {}
 
-  let virtualModules: Record<string, string> = {}
-
   return {
     name: 'vite-plugin-bling',
     enforce: 'pre',
