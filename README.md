@@ -127,13 +127,13 @@ The `secret$` function can be used to scope any expression to the server (secret
 ```tsx
 import { secret$ } from '@tanstack/bling'
 
-const secretMessage = secret$('It is a secret!')')
+const secretMessage = secret$('It is a secret!')
 ```
 
 Server Output:
 
 ```tsx
-const secretMessage = server$('It is a secret!')')
+const secretMessage = server$('It is a secret!')
 ```
 
 Client Output:
