@@ -4,7 +4,7 @@ import { App } from './root'
 
 hydrate(
   () => (
-    <manifestContext.Provider value={{}}>
+    <manifestContext.Provider value={{} as any}>
       <App />
     </manifestContext.Provider>
   ),

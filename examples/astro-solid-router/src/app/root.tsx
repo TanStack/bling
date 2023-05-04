@@ -99,7 +99,7 @@ export const routes = [
         component: lazy(() =>
           import$({
             default: () => {
-              const routeData = useRouteData()
+              const routeData: any = useRouteData()
               const [action, submit] = useAction(increment)
               return (
                 <div>

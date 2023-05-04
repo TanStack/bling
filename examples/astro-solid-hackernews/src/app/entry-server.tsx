@@ -1,6 +1,7 @@
 import { hasHandler, handleFetch$ } from '@tanstack/bling/server'
 import type { APIContext } from 'astro'
 import { renderToStringAsync } from 'solid-js/web'
+// @ts-ignore
 import { manifest } from 'astro:ssr-manifest'
 import { manifestContext } from './manifest'
 import { routes } from './root'
