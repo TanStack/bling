@@ -267,6 +267,10 @@ export function resolveRequestHref(
       ? `${pathname}?payload=${encodeURIComponent(payloadInit.body as string)}`
       : pathname
 
+  if (method.toLocaleLowerCase() === 'get') {
+    delete payloadInit.body
+  }
+
   return new URL(
     resolved,
     typeof document !== 'undefined' ? window.location.href : `http://localhost`,
