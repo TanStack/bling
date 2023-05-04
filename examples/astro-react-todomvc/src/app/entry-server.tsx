@@ -4,6 +4,7 @@ import {
   addDeserializer,
 } from '@tanstack/bling/server'
 import type { APIContext } from 'astro'
+// @ts-ignore
 import * as ReactDOM from 'react-dom/server.browser'
 import { createStaticHandler } from '@remix-run/router'
 import {
@@ -12,6 +13,7 @@ import {
 } from 'react-router-dom/server'
 import { routes } from './root'
 import { manifestContext } from './manifest'
+// @ts-ignore
 import { manifest } from 'astro:ssr-manifest'
 
 addDeserializer({
