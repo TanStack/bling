@@ -1,7 +1,9 @@
 import { hasHandler, handleFetch$ } from '@tanstack/bling/server'
 import type { APIContext } from 'astro'
+// @ts-ignore
 import * as ReactDOM from 'react-dom/server.browser'
 import { App } from './root'
+// @ts-ignore
 import { manifest } from 'astro:ssr-manifest'
 import { manifestContext } from './manifest'
 
