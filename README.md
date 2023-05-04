@@ -127,13 +127,13 @@ The `secret$` function can be used to scope any expression to the server (secret
 ```tsx
 import { secret$ } from '@tanstack/bling'
 
-const secretMessage = secret$('It is a secret!')')
+const secretMessage = secret$('It is a secret!')
 ```
 
 Server Output:
 
 ```tsx
-const secretMessage = server$('It is a secret!')')
+const secretMessage = server$('It is a secret!')
 ```
 
 Client Output:
@@ -183,9 +183,11 @@ This can be used to code-split React/Solid components too:
 import { import$ } from '@tanstack/bling'
 import { lazy } from 'react'
 
-const fn = lazy(() => import$({
-  default: () => <div>Hello World!</div>,
-}))
+const fn = lazy(() =>
+  import$({
+    default: () => <div>Hello World!</div>,
+  }),
+)
 ```
 
 Output:
@@ -265,6 +267,6 @@ console.log(result) // 'Hello World!'
 </details>
 <!-- Use the force, Luke! -->
 
-  - [`websocket$`](#websocket)
-  - [`lazy$`](#lazy)
-  - [`interactive$`/`island$`](#interactive)
+- [`websocket$`](#websocket)
+- [`lazy$`](#lazy)
+- [`interactive$`/`island$`](#interactive)

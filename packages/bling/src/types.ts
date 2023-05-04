@@ -21,7 +21,7 @@ export type FetchFnReturn<T extends AnyFetchFn> = Awaited<
 
 export type CreateFetcherFn = <T extends AnyFetchFn>(
   fn: T,
-  opts?: FetchFnCtxWithRequest,
+  opts?: FetchFnCtxWithRequest | FetchFnCtxOptions,
 ) => Fetcher<T>
 
 export type FetcherFn<T extends AnyFetchFn> = (
